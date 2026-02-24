@@ -1,7 +1,8 @@
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,6 +21,7 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const inputBg = theme.inputBg;
   const placeholderColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(15,26,43,0.4)';
@@ -28,19 +30,17 @@ export default function LoginScreen() {
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.content}>
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <DibsLogo width={140} height={52} />
-            </View>
+          <View style={styles.logoContainer}>
+            <DibsLogo width={200} height={77} />
+          </View>
+
+          <View style={styles.form}>
             <ThemedText type="title" style={[styles.headerTitle, { color: theme.text }]}>
               Welcome back
             </ThemedText>
             <ThemedText style={[styles.subTitle, { color: theme.mutedText }]}>
               Sign in with your email to continue
             </ThemedText>
-          </View>
-
-          <View style={styles.form}>
             <Field
               label="Email address"
               placeholder="e.g. wilson09@gmail.com"
@@ -53,7 +53,7 @@ export default function LoginScreen() {
               keyboardType="email-address"
               textContentType="emailAddress"
             />
-            <Field
+            <PasswordField
               label="Password"
               placeholder="•••••••••••••"
               value={password}
@@ -61,7 +61,8 @@ export default function LoginScreen() {
               theme={theme}
               inputBg={inputBg}
               placeholderColor={placeholderColor}
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              onToggleVisibility={() => setShowPassword((v) => !v)}
               textContentType="password"
             />
             <Pressable
@@ -98,7 +99,7 @@ export default function LoginScreen() {
                   opacity: pressed ? 0.9 : 1,
                 },
               ]}>
-              <MaterialIcons name="mail" size={20} color={theme.accent} />
+              <FontAwesome5 name="google" size={20} color={theme.text} />
               <ThemedText style={[styles.socialButtonText, { color: theme.text }]}>Sign in with Google</ThemedText>
             </Pressable>
             <Pressable
@@ -110,7 +111,7 @@ export default function LoginScreen() {
                   opacity: pressed ? 0.9 : 1,
                 },
               ]}>
-              <MaterialIcons name="phone-iphone" size={20} color={theme.text} />
+              <FontAwesome5 name="apple" size={20} color={theme.text} />
               <ThemedText style={[styles.socialButtonText, { color: theme.text }]}>Sign in with Apple</ThemedText>
             </Pressable>
           </View>
@@ -162,14 +163,66 @@ function Field({
   );
 }
 
+function PasswordField({
+  label,
+  placeholder,
+  theme,
+  inputBg,
+  placeholderColor,
+  secureTextEntry,
+  onToggleVisibility,
+  ...props
+}: {
+  label: string;
+  placeholder?: string;
+  theme: typeof Colors.light;
+  inputBg: string;
+  placeholderColor: string;
+  secureTextEntry: boolean;
+  onToggleVisibility: () => void;
+} & ComponentProps<typeof TextInput>) {
+  return (
+    <View style={styles.fieldWrap}>
+      <ThemedText style={[styles.fieldLabel, { color: theme.text }]}>{label}</ThemedText>
+      <View style={styles.passwordInputWrap}>
+        <TextInput
+          placeholder={placeholder ?? label}
+          placeholderTextColor={placeholderColor}
+          secureTextEntry={secureTextEntry}
+          style={[
+            styles.input,
+            styles.inputWithRightIcon,
+            {
+              backgroundColor: inputBg,
+              borderColor: theme.inputBorder,
+              color: theme.text,
+            },
+          ]}
+          {...props}
+        />
+        <Pressable
+          onPress={onToggleVisibility}
+          style={styles.eyeButton}
+          hitSlop={12}
+          accessibilityLabel={secureTextEntry ? 'Show password' : 'Hide password'}>
+          <MaterialIcons
+            name={secureTextEntry ? 'visibility-off' : 'visibility'}
+            size={22}
+            color={theme.mutedText}
+          />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safeArea: { flex: 1, paddingHorizontal: 16 },
   content: { flex: 1, paddingTop: 24, justifyContent: 'space-between' },
-  header: { gap: 8 },
-  logoContainer: { alignItems: 'center', marginBottom: 16 },
-  headerTitle: { fontSize: 24, lineHeight: 30, letterSpacing: -1 },
-  subTitle: { fontSize: 14, lineHeight: 22, opacity: 0.9 },
+  logoContainer: { alignItems: 'center', marginBottom: 32 },
+  headerTitle: { fontSize: 24, lineHeight: 30, letterSpacing: -1, marginBottom: 4 },
+  subTitle: { fontSize: 14, lineHeight: 22, opacity: 0.9, marginBottom: 24 },
   form: { gap: 16 },
   fieldWrap: { marginBottom: 4 },
   fieldLabel: { fontSize: 14, lineHeight: 22, marginBottom: 6 },
@@ -180,6 +233,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     fontSize: 14,
     fontFamily: FontFamilies.regular,
+  },
+  passwordInputWrap: { position: 'relative', justifyContent: 'center' },
+  inputWithRightIcon: { paddingRight: 48 },
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   forgotWrap: { alignSelf: 'flex-end', marginTop: -4 },
   forgotText: { fontSize: 14, fontFamily: FontFamilies.medium },

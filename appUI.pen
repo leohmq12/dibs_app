@@ -746,7 +746,7 @@
     {
       "type": "frame",
       "id": "pTXsO",
-      "x": -800,
+      "x": -801,
       "y": 0,
       "name": "Splash Screen",
       "clip": true,
@@ -926,30 +926,6 @@
                 "align": "inside",
                 "thickness": 1
               }
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "2xexO",
-          "x": 0,
-          "y": 778,
-          "name": "Home Indicator",
-          "width": 375,
-          "height": 34,
-          "fill": "#ffffff00",
-          "layout": "none",
-          "children": [
-            {
-              "type": "rectangle",
-              "cornerRadius": 10,
-              "id": "blN4c",
-              "x": 120,
-              "y": 21,
-              "name": "Shape",
-              "fill": "#ffffff26",
-              "width": 135,
-              "height": 5
             }
           ]
         }
@@ -6125,7 +6101,7 @@
           "y": 714,
           "name": "Vector",
           "geometry": "M375 0l0 64-375 0 0-64 117.88 0c11.73 0 22.09 7.21 26.67 18.01 7.08 16.72 23.64 28.46 42.95 28.46 19.31 0 35.87-11.73 42.95-28.46 4.57-10.8 14.94-18.01 26.67-18.01l117.88 0z",
-          "fill": "#22c6d90d",
+          "fill": "#070a12ff",
           "width": 375,
           "height": 64,
           "stroke": {

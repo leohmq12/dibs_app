@@ -1,3 +1,4 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
@@ -22,32 +23,32 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const inputBg = theme.inputBg;
   const placeholderColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(15,26,43,0.4)';
 
   const handleCreateAccount = () => {
     signIn();
-    router.replace('/(tabs)');
+    router.replace('/(auth)/face-enroll');
   };
 
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.content}>
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <DibsLogo width={140} height={52} />
-            </View>
+          <View style={styles.logoContainer}>
+            <DibsLogo width={200} height={77} />
+          </View>
+
+          <View style={styles.form}>
             <ThemedText type="title" style={[styles.headerTitle, { color: theme.text }]}>
               Create an account
             </ThemedText>
             <ThemedText style={[styles.subTitle, { color: theme.mutedText }]}>
               Use your email to get started
             </ThemedText>
-          </View>
-
-          <View style={styles.form}>
             <Field
               label="Full Name"
               placeholder="e.g. Jenny Wilson"
@@ -69,7 +70,7 @@ export default function SignupScreen() {
               keyboardType="email-address"
               textContentType="emailAddress"
             />
-            <Field
+            <PasswordField
               label="Password"
               placeholder="•••••••••••••"
               value={password}
@@ -77,10 +78,11 @@ export default function SignupScreen() {
               theme={theme}
               inputBg={inputBg}
               placeholderColor={placeholderColor}
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              onToggleVisibility={() => setShowPassword((v) => !v)}
               textContentType="newPassword"
             />
-            <Field
+            <PasswordField
               label="Confirm Password"
               placeholder="•••••••••••••"
               value={confirmPassword}
@@ -88,7 +90,8 @@ export default function SignupScreen() {
               theme={theme}
               inputBg={inputBg}
               placeholderColor={placeholderColor}
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword}
+              onToggleVisibility={() => setShowConfirmPassword((v) => !v)}
               textContentType="newPassword"
             />
 
@@ -167,14 +170,66 @@ function Field({
   );
 }
 
+function PasswordField({
+  label,
+  placeholder,
+  theme,
+  inputBg,
+  placeholderColor,
+  secureTextEntry,
+  onToggleVisibility,
+  ...props
+}: {
+  label: string;
+  placeholder?: string;
+  theme: typeof Colors.light;
+  inputBg: string;
+  placeholderColor: string;
+  secureTextEntry: boolean;
+  onToggleVisibility: () => void;
+} & ComponentProps<typeof TextInput>) {
+  return (
+    <View style={styles.fieldWrap}>
+      <ThemedText style={[styles.fieldLabel, { color: theme.text }]}>{label}</ThemedText>
+      <View style={styles.passwordInputWrap}>
+        <TextInput
+          placeholder={placeholder ?? label}
+          placeholderTextColor={placeholderColor}
+          secureTextEntry={secureTextEntry}
+          style={[
+            styles.input,
+            styles.inputWithRightIcon,
+            {
+              backgroundColor: inputBg,
+              borderColor: theme.inputBorder,
+              color: theme.text,
+            },
+          ]}
+          {...props}
+        />
+        <Pressable
+          onPress={onToggleVisibility}
+          style={styles.eyeButton}
+          hitSlop={12}
+          accessibilityLabel={secureTextEntry ? 'Show password' : 'Hide password'}>
+          <MaterialIcons
+            name={secureTextEntry ? 'visibility-off' : 'visibility'}
+            size={22}
+            color={theme.mutedText}
+          />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safeArea: { flex: 1, paddingHorizontal: 16 },
   content: { flex: 1, paddingTop: 24, justifyContent: 'space-between' },
-  header: { gap: 8 },
-  logoContainer: { alignItems: 'center', marginBottom: 16 },
-  headerTitle: { fontSize: 24, lineHeight: 30, letterSpacing: -1 },
-  subTitle: { fontSize: 14, lineHeight: 22, opacity: 0.9 },
+  logoContainer: { alignItems: 'center', marginBottom: 32 },
+  headerTitle: { fontSize: 24, lineHeight: 30, letterSpacing: -1, marginBottom: 4 },
+  subTitle: { fontSize: 14, lineHeight: 22, opacity: 0.9, marginBottom: 24 },
   form: { gap: 12 },
   fieldWrap: { marginBottom: 4 },
   fieldLabel: { fontSize: 14, lineHeight: 22, marginBottom: 6 },
@@ -185,6 +240,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     fontSize: 14,
     fontFamily: FontFamilies.regular,
+  },
+  passwordInputWrap: { position: 'relative', justifyContent: 'center' },
+  inputWithRightIcon: { paddingRight: 48 },
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   checkboxRow: {
     flexDirection: 'row',
