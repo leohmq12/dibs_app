@@ -1,16 +1,13 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import type { ComponentProps, ReactNode } from 'react';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Pill } from '@/components/ui/pill';
-import { SurfaceCard } from '@/components/ui/surface-card';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
 import { useColorScheme, useSetColorScheme } from '@/hooks/use-color-scheme';
@@ -21,109 +18,144 @@ export default function SettingsScreen() {
   const theme = Colors[colorScheme];
   const setColorScheme = useSetColorScheme();
   const { signOut } = useDemoSession();
-  const enableLayoutAnimations = process.env.EXPO_OS !== 'web';
   const insets = useSafeAreaInsets();
 
-  const [biometricUnlock, setBiometricUnlock] = useState(true);
-  const [offlineAccess, setOfflineAccess] = useState(false);
-  const [watermark, setWatermark] = useState(true);
+  const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
+  const [offlineAccess, setOfflineAccess] = useState(true);
+  const [requireFaceScan, setRequireFaceScan] = useState(true);
+
+  const handleDarkMode = (value: boolean) => {
+    setDarkMode(value);
+    setColorScheme(value ? 'dark' : 'light');
+  };
+
+  const cardBg = theme.cardTint;
+  const cardBorder = theme.cardTintBorder;
+  const dividerColor = colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.08)' : 'rgba(34, 198, 217, 0.12)';
+  const sectionTitleColor = theme.mutedText;
+  const toggleTrackOn = '#2563EB';
 
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <LinearGradient
-            colors={
-              colorScheme === 'dark'
-                ? ['rgba(106, 168, 255, 0.14)', 'rgba(7, 10, 18, 0)']
-                : ['rgba(106, 168, 255, 0.14)', 'rgba(246, 247, 251, 0)']
-            }
-            start={{ x: 0.15, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={styles.topGlow}
-          />
+        {/* Header: gear icon + Settings title */}
+        <View style={styles.header}>
+          <View style={[styles.headerIcon, { backgroundColor: cardBg }]}>
+            <MaterialIcons name="settings" size={24} color={theme.accent} />
+          </View>
+          <ThemedText style={[styles.headerTitle, { color: theme.text }]}>Settings</ThemedText>
         </View>
+
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: 110 + insets.bottom }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}
           showsVerticalScrollIndicator={false}>
-          <Animated.View
-            style={styles.header}
-            {...(enableLayoutAnimations ? { entering: FadeInDown.duration(240) } : {})}>
-            <SurfaceCard variant="glass" style={styles.heroCard}>
-              <View style={styles.heroRow}>
-                <View style={[styles.heroIcon, { backgroundColor: theme.surface }]}>
-                  <MaterialIcons name="settings" size={18} color={theme.primary} />
+          {/* Rounded-bottom container (design: Frame 25) */}
+          <View style={[styles.contentCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+            {/* --- Account --- */}
+            <ThemedText style={[styles.sectionTitle, { color: sectionTitleColor }]}>Account</ThemedText>
+            <View style={[styles.block, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+              <Pressable style={({ pressed }) => [styles.profileRow, { opacity: pressed ? 0.9 : 1 }]}>
+                <Image
+                  source={require('../../assets/images/face.png')}
+                  style={styles.avatar}
+                />
+                <View style={styles.profileText}>
+                  <ThemedText style={[styles.profileName, { color: theme.text }]}>Roger Smith</ThemedText>
+                  <ThemedText style={[styles.profileEmail, { color: theme.mutedText }]}>roger.smith@email.com</ThemedText>
+                  <ThemedText style={[styles.profileId, { color: theme.accent }]}>ID: 8829-DIBS-SEC</ThemedText>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <ThemedText type="title" style={{ marginBottom: 2 }}>
-                    Settings
-                  </ThemedText>
-                  <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.medium }}>
-                    Account, security, and privacy controls.
-                  </ThemedText>
+                <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.6 }} />
+              </Pressable>
+              <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+              <Pressable style={({ pressed }) => [styles.row, { opacity: pressed ? 0.9 : 1 }]}>
+                <View style={[styles.iconCircle, { backgroundColor: colorScheme === 'dark' ? 'rgba(119, 126, 137, 0.3)' : 'rgba(99, 106, 117, 0.25)' }]}>
+                  <MaterialIcons name="lock" size={12} color={theme.mutedText} />
                 </View>
+                <ThemedText style={[styles.rowLabel, { color: theme.text }]}>Reset Face ID</ThemedText>
+                <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.6 }} />
+              </Pressable>
+            </View>
+
+            {/* --- Appearance --- */}
+            <ThemedText style={[styles.sectionTitle, { color: sectionTitleColor }]}>Appearance</ThemedText>
+            <View style={[styles.block, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+              <View style={styles.row}>
+                <LinearGradient
+                  colors={['#F2EA1B', '#C0B800']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.iconCircle}>
+                  <MaterialIcons name="dark-mode" size={12} color="#FFF" />
+                </LinearGradient>
+                <ThemedText style={[styles.rowLabel, { color: theme.text }]}>Dark Mode</ThemedText>
+                <Switch
+                  value={darkMode}
+                  onValueChange={handleDarkMode}
+                  trackColor={{ false: theme.border, true: toggleTrackOn }}
+                  thumbColor="#D9D9D9"
+                />
               </View>
-            </SurfaceCard>
-          </Animated.View>
+            </View>
 
-          <Animated.View {...(enableLayoutAnimations ? { entering: FadeInUp.duration(240) } : {})}>
-            <Section title="Account" theme={theme}>
-              <Row icon="person" label="Profile" value="John Doe" theme={theme} onPress={() => {}} />
-              <Row
-                icon="mail"
-                label="Email"
-                value="john.doe@example.com"
-                theme={theme}
-                onPress={() => {}}
-              />
-            </Section>
-          </Animated.View>
+            {/* --- Security --- */}
+            <ThemedText style={[styles.sectionTitle, { color: sectionTitleColor }]}>Security</ThemedText>
+            <View style={[styles.block, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+              <View style={styles.row}>
+                <LinearGradient colors={theme.blueGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.iconCircle}>
+                  <MaterialIcons name="cloud-off" size={12} color="#FFF" />
+                </LinearGradient>
+                <ThemedText style={[styles.rowLabel, { color: theme.text }]}>Offline Access</ThemedText>
+                <Switch
+                  value={offlineAccess}
+                  onValueChange={setOfflineAccess}
+                  trackColor={{ false: theme.border, true: toggleTrackOn }}
+                  thumbColor="#D9D9D9"
+                />
+              </View>
+              <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+              <View style={styles.row}>
+                <LinearGradient colors={theme.dangerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.iconCircle}>
+                  <MaterialIcons name="lock" size={12} color="#FFF" />
+                </LinearGradient>
+                <ThemedText style={[styles.rowLabel, { color: theme.text }]}>Require Face Scan</ThemedText>
+                <Switch
+                  value={requireFaceScan}
+                  onValueChange={setRequireFaceScan}
+                  trackColor={{ false: theme.border, true: toggleTrackOn }}
+                  thumbColor="#D9D9D9"
+                />
+              </View>
+              <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+              <Pressable style={({ pressed }) => [styles.row, { opacity: pressed ? 0.9 : 1 }]}>
+                <LinearGradient colors={['#F2EA1B', '#C0B800']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.iconCircle}>
+                  <MaterialIcons name="fingerprint" size={12} color="#FFF" />
+                </LinearGradient>
+                <ThemedText style={[styles.rowLabel, { color: theme.text }]}>Biometric Logs</ThemedText>
+                <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.6 }} />
+              </Pressable>
+            </View>
 
-          <Animated.View {...(enableLayoutAnimations ? { entering: FadeInUp.duration(240).delay(40) } : {})}>
-            <Section title="Appearance" theme={theme}>
-              <ToggleRow
-                icon="dark-mode"
-                label="Dark Mode"
-                value={colorScheme === 'dark'}
-                onValueChange={(value) => setColorScheme(value ? 'dark' : 'light')}
-                theme={theme}
-              />
-            </Section>
-          </Animated.View>
+            {/* --- Privacy & Compliance --- */}
+            <ThemedText style={[styles.sectionTitle, { color: sectionTitleColor }]}>Privacy & Compliance</ThemedText>
+            <View style={[styles.block, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+              <Pressable style={({ pressed }) => [styles.row, { opacity: pressed ? 0.9 : 1 }]}>
+                <LinearGradient colors={theme.blueGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.iconCircle}>
+                  <MaterialIcons name="shield" size={12} color="#FFF" />
+                </LinearGradient>
+                <ThemedText style={[styles.rowLabel, { color: theme.text }]}>Data Retention Policy</ThemedText>
+                <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.6 }} />
+              </Pressable>
+              <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+              <Pressable style={({ pressed }) => [styles.row, { opacity: pressed ? 0.9 : 1 }]}>
+                <LinearGradient colors={theme.dangerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.iconCircle}>
+                  <MaterialIcons name="file-download" size={12} color="#FFF" />
+                </LinearGradient>
+                <ThemedText style={[styles.rowLabel, { color: theme.text }]}>Export User Data</ThemedText>
+                <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.6 }} />
+              </Pressable>
+            </View>
 
-          <Animated.View {...(enableLayoutAnimations ? { entering: FadeInUp.duration(240).delay(80) } : {})}>
-            <Section title="Security" theme={theme}>
-              <ToggleRow
-                icon="fingerprint"
-                label="Biometric Unlock"
-                value={biometricUnlock}
-                onValueChange={setBiometricUnlock}
-                theme={theme}
-              />
-              <ToggleRow
-                icon="cloud-off"
-                label="Partial Offline Access"
-                value={offlineAccess}
-                onValueChange={setOfflineAccess}
-                theme={theme}
-              />
-            </Section>
-          </Animated.View>
-
-          <Animated.View {...(enableLayoutAnimations ? { entering: FadeInUp.duration(240).delay(120) } : {})}>
-            <Section title="Privacy" theme={theme}>
-              <ToggleRow
-                icon="visibility"
-                label="Viewer Watermark"
-                value={watermark}
-                onValueChange={setWatermark}
-                theme={theme}
-              />
-              <Row icon="security" label="Permissions" value="Review" theme={theme} onPress={() => {}} />
-            </Section>
-          </Animated.View>
-
-          <Animated.View {...(enableLayoutAnimations ? { entering: FadeInUp.duration(240).delay(160) } : {})}>
+            {/* Log Out */}
             <Pressable
               onPress={() => {
                 signOut();
@@ -131,197 +163,124 @@ export default function SettingsScreen() {
               }}
               style={({ pressed }) => [
                 styles.logoutButton,
-                {
-                  borderColor: theme.danger,
-                  opacity: pressed ? 0.86 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                },
+                { backgroundColor: theme.primary, opacity: pressed ? 0.9 : 1 },
               ]}>
-              <ThemedText style={{ color: theme.danger, fontFamily: FontFamilies.semiBold }}>Logout</ThemedText>
+              <ThemedText style={styles.logoutText}>Log Out</ThemedText>
             </Pressable>
-          </Animated.View>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-function Section({
-  title,
-  theme,
-  children,
-}: {
-  title: string;
-  theme: typeof Colors.light;
-  children: ReactNode;
-}) {
-  return (
-    <View style={{ marginBottom: 14 }}>
-      <View style={styles.sectionHeader}>
-        <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.semiBold }}>
-          {title}
-        </ThemedText>
-        <Pill tone="neutral" style={styles.sectionPill}>
-          <MaterialIcons name="tune" size={15} color={theme.mutedText} />
-        </Pill>
-      </View>
-      <SurfaceCard style={styles.sectionCard}>{children}</SurfaceCard>
-    </View>
-  );
-}
-
-function Row({
-  icon,
-  label,
-  value,
-  theme,
-  onPress,
-}: {
-  icon: ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  value: string;
-  theme: typeof Colors.light;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
-      ]}>
-      <View style={[styles.rowIconWrap, { backgroundColor: theme.surface }]}>
-        <MaterialIcons name={icon} size={16} color={theme.primary} />
-      </View>
-      <View style={styles.rowText}>
-        <ThemedText style={{ fontFamily: FontFamilies.semiBold }}>{label}</ThemedText>
-        <ThemedText style={{ color: theme.mutedText }} numberOfLines={1}>
-          {value}
-        </ThemedText>
-      </View>
-      <Pill tone="neutral" style={styles.chevronPill}>
-        <MaterialIcons name="chevron-right" size={18} color={theme.icon} />
-      </Pill>
-    </Pressable>
-  );
-}
-
-function ToggleRow({
-  icon,
-  label,
-  value,
-  onValueChange,
-  theme,
-}: {
-  icon: ComponentProps<typeof MaterialIcons>['name'];
-  label: string;
-  value: boolean;
-  onValueChange: (value: boolean) => void;
-  theme: typeof Colors.light;
-}) {
-  return (
-    <View style={styles.row}>
-      <View style={[styles.rowIconWrap, { backgroundColor: theme.surface }]}>
-        <MaterialIcons name={icon} size={16} color={theme.primary} />
-      </View>
-      <View style={styles.rowText}>
-        <ThemedText style={{ fontFamily: FontFamilies.semiBold }}>{label}</ThemedText>
-        <ThemedText style={{ color: theme.mutedText }}>{value ? 'On' : 'Off'}</ThemedText>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onValueChange}
-        trackColor={{ false: theme.border, true: theme.accent }}
-        thumbColor={colorSchemeThumb(theme)}
-      />
-    </View>
-  );
-}
-
-function colorSchemeThumb(theme: typeof Colors.light) {
-  return theme.surface2;
-}
-
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  topGlow: {
-    position: 'absolute',
-    left: -40,
-    right: -40,
-    top: -60,
-    height: 300,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
+  screen: { flex: 1 },
+  safeArea: { flex: 1 },
   header: {
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  heroCard: {
-    padding: 12,
-  },
-  heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 16,
+    gap: 14,
   },
-  heroIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+  headerTitle: {
+    fontSize: 18,
+    fontFamily: FontFamilies.semiBold,
+    lineHeight: 30,
   },
-  sectionPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+  scrollContent: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
-  sectionCard: {
-    padding: 0,
+  contentCard: {
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 24,
     overflow: 'hidden',
   },
-  row: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: FontFamilies.medium,
+    lineHeight: 30,
+    marginBottom: 0,
+  },
+  block: {
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 24,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+  },
+  profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 0,
+    gap: 14,
   },
-  rowIconWrap: {
-    width: 32,
-    height: 32,
+  avatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+  },
+  profileText: { flex: 1, minWidth: 0 },
+  profileName: { fontSize: 16, fontFamily: FontFamilies.medium, lineHeight: 30 },
+  profileEmail: { fontSize: 12, lineHeight: 19, opacity: 0.8 },
+  profileId: { fontSize: 12, lineHeight: 19 },
+  divider: {
+    height: 1,
+    alignSelf: 'stretch',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 0,
+    gap: 14,
+    minWidth: 0,
+  },
+  iconCircle: {
+    width: 24,
+    height: 24,
+    minWidth: 24,
+    minHeight: 24,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  rowText: {
+  rowLabel: {
     flex: 1,
-    gap: 2,
-  },
-  chevronPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 5,
-    borderColor: 'transparent',
+    minWidth: 0,
+    fontSize: 12,
+    fontFamily: FontFamilies.regular,
+    lineHeight: 19,
   },
   logoutButton: {
-    marginTop: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: 12,
+    marginTop: 32,
+    height: 46,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  logoutText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: FontFamilies.semiBold,
   },
 });

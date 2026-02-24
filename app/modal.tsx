@@ -1,9 +1,13 @@
+/**
+ * Verify Identity modal — Pencil F42wX (Model2) / CIzTh.
+ * Centered card on dark background, not a bottom sheet.
+ */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
-import LottieView from 'lottie-react-native';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,162 +15,81 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 
-type VerificationState = 'scanning' | 'success' | 'failure';
+const CARD_WIDTH = 320;
+const FACE_SIZE = 174;
 
 export default function IdentityVerificationModal() {
   const router = useRouter();
-  const { mediaId } = useLocalSearchParams<{ mediaId?: string }>();
-  const { verifyVault, resetVaultVerification } = useDemoSession();
+  const { verifyVault } = useDemoSession();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const enableLayoutAnimations = process.env.EXPO_OS !== 'web';
+  const [verifying, setVerifying] = useState(false);
 
-  const [state, setState] = useState<VerificationState>('scanning');
+  const handleVerify = () => {
+    setVerifying(true);
+    verifyVault();
+    setTimeout(() => router.back(), 400);
+  };
 
-  const targetLabel = useMemo(() => (mediaId ? `Media ID: ${mediaId}` : 'Media ID: —'), [mediaId]);
-
-  const isScanning = state === 'scanning';
-  const isSuccess = state === 'success';
-  const statusColor = isSuccess ? theme.success : state === 'failure' ? theme.danger : theme.accent;
+  const cardBg = colorScheme === 'dark' ? '#11141C' : theme.surface;
 
   return (
-    <ThemedView
-      style={styles.screen}
-      lightColor="rgba(0, 0, 0, 0.28)"
-      darkColor="rgba(0, 0, 0, 0.62)">
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <Pressable onPress={() => router.back()} style={styles.backdrop} />
-
-        <Animated.View
-          style={[styles.card, { backgroundColor: theme.surface2, borderColor: theme.border }]}
-          {...(enableLayoutAnimations ? { entering: FadeInUp.duration(220) } : {})}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardHeaderText}>
-              <ThemedText type="subtitle">Identity Verification</ThemedText>
-              <ThemedText style={[styles.subtitleText, { color: theme.mutedText }]}>
-                Securely confirm your identity to unlock the vault.
-              </ThemedText>
+    <ThemedView style={styles.screen} lightColor="rgba(0, 0, 0, 0.45)" darkColor="#070A12">
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => router.back()} />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <Animated.View
+            entering={FadeIn.duration(220)}
+            style={[styles.card, { backgroundColor: cardBg, borderColor: theme.cardTintBorder }]}>
+            {/* Padlock — Pencil ADGv9: 60×60, teal tint */}
+            <View style={[styles.iconWrap, { backgroundColor: theme.cardTint }]}>
+              <MaterialIcons name="lock" size={32} color={theme.accent} />
             </View>
-            <Pressable
-              onPress={() => router.back()}
-              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }, styles.closeButton]}>
-              <MaterialIcons name="close" size={18} color={theme.icon} />
-            </Pressable>
-          </View>
-
-          <View style={styles.metaRow}>
-            <View style={[styles.metaPill, { backgroundColor: theme.surface }]}>
-              <MaterialIcons name="shield" size={14} color={theme.primary} />
-              <ThemedText style={{ fontFamily: FontFamilies.semiBold, fontSize: 12 }}>Secure Check</ThemedText>
-            </View>
-            <ThemedText
-              style={[styles.targetLabel, { color: theme.mutedText }]}
-              numberOfLines={1}
-              ellipsizeMode="tail">
-              {targetLabel}
+            <ThemedText style={[styles.title, { color: theme.text }]}>Verify Identity</ThemedText>
+            <ThemedText style={[styles.subtitle, { color: theme.mutedText }]}>
+              Securely confirm your identity to unlock the vault.
             </ThemedText>
-          </View>
 
-          <View style={[styles.scanCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <View style={styles.scanHeader}>
-              <View style={styles.scanHeaderText}>
-                <ThemedText style={{ fontFamily: FontFamilies.semiBold }}>Face Scan</ThemedText>
-                <ThemedText style={{ color: theme.mutedText, marginTop: 2 }}>
-                  Align your face within the frame.
-                </ThemedText>
-              </View>
-              <View style={[styles.statusPill, { backgroundColor: theme.surface2, borderColor: statusColor }]}>
-                <MaterialIcons
-                  name={isSuccess ? 'check-circle' : state === 'failure' ? 'cancel' : 'hourglass-top'}
-                  size={14}
-                  color={statusColor}
-                />
-                <ThemedText style={{ fontFamily: FontFamilies.semiBold, color: statusColor, fontSize: 12 }}>
-                  {isSuccess ? 'Verified' : state === 'failure' ? 'Failed' : 'Scanning'}
-                </ThemedText>
-              </View>
-            </View>
-
-            <View style={[styles.faceFrame, { borderColor: statusColor }]}>
-              <View style={styles.faceImageWrap}>
-                <Image
-                  source={require('../assets/face.gif')}
-                  style={styles.faceImage}
-                  contentFit="contain"
-                  contentPosition="center"
-                />
-              </View>
-              {isScanning ? (
-                <LottieView
-                  source={require('../assets/lottie/scan_line.json')}
-                  autoPlay
-                  loop
-                  style={styles.scanLottie}
-                />
-              ) : null}
-            </View>
-
-            <View style={styles.scanFooter}>
-              <MaterialIcons name="lightbulb" size={18} color={theme.icon} />
-              <ThemedText style={[styles.scanFooterText, { color: theme.mutedText }]} numberOfLines={2}>
-                Remove hats or glasses, keep a neutral expression, and stay still.
+            {/* Instruction — Pencil WmORg */}
+            <View style={[styles.instructionBox, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
+              <MaterialIcons name="lightbulb-outline" size={24} color={theme.mutedText} style={{ opacity: 0.7 }} />
+              <ThemedText style={[styles.instructionText, { color: theme.mutedText }]}>
+                Remove hats or glasses, keep a neutral expression and stay still.
               </ThemedText>
             </View>
-          </View>
 
-          <View style={styles.actions}>
+            {/* Face / scan area — Pencil 1Cise: 174×174, teal border */}
+            <View style={[styles.faceFrame, { borderColor: theme.accent }]}>
+              <Image
+                source={require('../assets/images/face.png')}
+                style={styles.faceImage}
+                contentFit="contain"
+              />
+            </View>
+
+            {/* Scanning pill — Pencil UymuP */}
+            <View style={[styles.scanningPill, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
+              <MaterialIcons name="videocam" size={14} color={theme.accent} />
+              <ThemedText style={[styles.scanningText, { color: theme.accent }]}>Scanning</ThemedText>
+            </View>
+
+            {/* Red button — Pencil fr50r: 230×46 */}
             <Pressable
-              onPress={() => {
-                setState('success');
-                verifyVault();
-                setTimeout(() => router.back(), 250);
-              }}
+              onPress={handleVerify}
               style={({ pressed }) => [
                 styles.primaryButton,
-                {
-                  backgroundColor: theme.primary,
-                  opacity: pressed ? 0.86 : 1,
-                },
+                { backgroundColor: theme.primary, opacity: pressed ? 0.9 : 1 },
               ]}>
-              <ThemedText style={{ color: '#FFFFFF', fontFamily: FontFamilies.semiBold }}>
-                Simulate Success
-              </ThemedText>
+              <ThemedText style={styles.primaryButtonText}>Use Pin Instead</ThemedText>
             </Pressable>
 
-            <Pressable
-              onPress={() => {
-                setState('failure');
-                resetVaultVerification();
-              }}
-              style={({ pressed }) => [
-                styles.outlineButton,
-                {
-                  borderColor: theme.danger,
-                  opacity: pressed ? 0.86 : 1,
-                },
-              ]}>
-              <ThemedText style={{ color: theme.danger, fontFamily: FontFamilies.semiBold }}>
-                Simulate Failure
-              </ThemedText>
+            {/* Cancel — Pencil LguQx */}
+            <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.cancelButton, pressed && { opacity: 0.8 }]}>
+              <ThemedText style={[styles.cancelButtonText, { color: theme.mutedText }]}>Cancel Verification</ThemedText>
             </Pressable>
-
-            <Pressable
-              onPress={() => router.back()}
-              style={({ pressed }) => [
-                styles.ghostButton,
-                {
-                  borderColor: theme.border,
-                  opacity: pressed ? 0.86 : 1,
-                },
-              ]}>
-              <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.semiBold }}>
-                Close
-              </ThemedText>
-            </Pressable>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -175,151 +98,108 @@ export default function IdentityVerificationModal() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   safeArea: {
     flex: 1,
+    width: '100%',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    alignItems: 'center',
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 28,
   },
   card: {
+    width: CARD_WIDTH,
+    maxWidth: '100%',
     borderRadius: 18,
     borderWidth: 1,
-    padding: 18,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 28,
+    alignItems: 'center',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    gap: 12,
-  },
-  cardHeaderText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  subtitleText: {
-    marginTop: 4,
-    flexShrink: 1,
-    flexWrap: 'wrap',
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
+  iconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    marginBottom: 24,
   },
-  metaRow: {
+  title: {
+    fontSize: 18,
+    fontFamily: FontFamilies.semiBold,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  instructionBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginBottom: 14,
-    flexWrap: 'wrap',
-  },
-  metaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  scanCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 14,
+    alignSelf: 'stretch',
     gap: 12,
-  },
-  scanHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  scanHeaderText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  targetLabel: {
-    flex: 1,
-    textAlign: 'right',
-    minWidth: 0,
-    flexShrink: 1,
-  },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 10,
     borderWidth: 1,
-    alignSelf: 'flex-start',
+    marginBottom: 24,
+  },
+  instructionText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
   },
   faceFrame: {
-    height: 180,
+    width: FACE_SIZE,
+    height: FACE_SIZE,
     borderRadius: 18,
-    borderWidth: 1.5,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.02)',
-  },
-  scanLottie: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.9,
-  },
-  faceImageWrap: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 20,
   },
   faceImage: {
-    width: 120,
-    height: 120,
+    width: 152,
+    height: 152,
+    borderRadius: 12,
   },
-  scanFooter: {
+  scanningPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
+    borderRadius: 40,
+    borderWidth: 1,
+    marginBottom: 24,
   },
-  scanFooterText: {
+  scanningText: {
+    fontSize: 12,
     fontFamily: FontFamilies.medium,
-    flex: 1,
-  },
-  actions: {
-    gap: 8,
   },
   primaryButton: {
-    borderRadius: 16,
-    paddingVertical: 12,
+    width: 230,
+    height: 46,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  outlineButton: {
-    borderRadius: 16,
-    paddingVertical: 12,
+  primaryButtonText: { color: '#FFF', fontSize: 14, fontFamily: FontFamilies.semiBold },
+  cancelButton: {
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  ghostButton: {
-    borderRadius: 16,
     paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
   },
+  cancelButtonText: { fontSize: 14, opacity: 0.7 },
 });

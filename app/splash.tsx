@@ -2,53 +2,52 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { DibsLogo } from '@/components/dibs-logo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, FontFamilies } from '@/constants/theme';
+import { FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { SurfaceCard } from '@/components/ui/surface-card';
 
 export default function SplashScreen() {
   const router = useRouter();
   const { isSignedIn } = useDemoSession();
   const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
 
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace(isSignedIn ? '/(tabs)' : '/(auth)/login');
-    }, 900);
+    }, 1200);
     return () => clearTimeout(timer);
   }, [isSignedIn, router]);
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <LinearGradient
-            colors={
-              colorScheme === 'dark'
-                ? ['rgba(34, 198, 217, 0.18)', 'rgba(7, 10, 18, 0)']
-                : ['rgba(34, 198, 217, 0.16)', 'rgba(246, 247, 251, 0)']
-            }
-            start={{ x: 0.2, y: 0 }}
-            end={{ x: 0.8, y: 1 }}
-            style={styles.topGlow}
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.content}>
+          <View style={styles.logoWrap}>
+            <DibsLogo width={120} height={46} />
+          </View>
+          <ThemedText
+            style={[
+              styles.tagline,
+              {
+                color: colorScheme === 'dark' ? '#FFFFFF' : '#0F1A2B',
+                opacity: colorScheme === 'dark' ? 1 : 0.85,
+              },
+            ]}>
+            digital image biometric systems
+          </ThemedText>
+        </View>
+        <View style={styles.indicator}>
+          <View
+            style={[
+              styles.indicatorBar,
+              { backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(15,26,43,0.2)' },
+            ]}
           />
         </View>
-
-        <SurfaceCard variant="glass" style={styles.splashCard}>
-          <View style={styles.logoStack}>
-            <DibsLogo width={200} height={80} />
-          </View>
-          <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.semiBold, textAlign: 'center' }}>
-            DIGITAL IMAGE BIOMETRIC SYSTEMS
-          </ThemedText>
-        </SurfaceCard>
       </SafeAreaView>
     </ThemedView>
   );
@@ -57,30 +56,38 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   safeArea: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+  },
+  content: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    gap: 48,
   },
-  topGlow: {
-    position: 'absolute',
-    left: -40,
-    right: -40,
-    top: -70,
-    height: 320,
-  },
-  splashCard: {
-    width: '100%',
-    maxWidth: 420,
+  logoWrap: {
     alignItems: 'center',
-    paddingVertical: 16,
   },
-  logoStack: {
+  tagline: {
+    fontFamily: FontFamilies.medium,
+    fontSize: 13,
+    letterSpacing: 2,
+    lineHeight: 30,
+    textAlign: 'center',
+    textTransform: 'lowercase',
+  },
+  indicator: {
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    paddingBottom: 8,
+  },
+  indicatorBar: {
+    width: 135,
+    height: 5,
+    borderRadius: 10,
   },
 });
