@@ -1638,9 +1638,9 @@
     {
       "type": "frame",
       "id": "TAzHe",
-      "x": 505,
+      "x": 506,
       "y": 0,
-      "name": "Sign Up",
+      "name": "Face Enroll",
       "clip": true,
       "width": 375,
       "height": 812,

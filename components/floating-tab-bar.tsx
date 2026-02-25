@@ -1,12 +1,13 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Image, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 
 const TABS = [
   { name: 'index', label: 'Home', icon: 'home' as const },
@@ -33,7 +34,7 @@ export function FloatingTabBar({ state, navigation }: any) {
   const theme = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth } = useViewportDimensions();
   const bottomPadding = Math.max(insets.bottom, 12);
 
   const tabColor = theme.tabIconSelected ?? theme.accent;
@@ -53,8 +54,9 @@ export function FloatingTabBar({ state, navigation }: any) {
         />
         <View style={styles.tabBarContent}>
           {TABS.map((tab, index) => {
-            const route = state.routes[index];
-            const isFocused = state.index === index;
+            const route = state.routes.find((r) => r.name === tab.name) ?? state.routes[index];
+            const routeIndex = state.routes.findIndex((r) => r.name === tab.name);
+            const isFocused = routeIndex >= 0 ? state.index === routeIndex : state.index === index;
             const btnWidth = index === 3 ? TAB_BUTTON_WIDTH_SETTINGS : TAB_BUTTON_WIDTH;
             const centerX = screenWidth * TAB_CENTER_RATIOS[index];
             const left = centerX - btnWidth / 2;
@@ -66,7 +68,7 @@ export function FloatingTabBar({ state, navigation }: any) {
                 canPreventDefault: true,
               });
               if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
+                navigation.navigate(tab.name);
               }
             };
 
@@ -132,6 +134,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+    zIndex: 10,
+    elevation: 10,
   },
   gestureBlock: {
     alignSelf: 'stretch',

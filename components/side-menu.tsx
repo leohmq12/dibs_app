@@ -3,18 +3,19 @@
  * 288px panel from left, dark overlay (#070a12cc), avatar + name, close chevron,
  * menu items with dividers, Log Out button at bottom.
  * Slides in from left on open, slides back left on close.
+ * On web, rendered via portal so it appears above the tab bar.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Image } from 'expo-image';
-import { BlurView } from 'expo-blur';
 import { useEffect, useRef } from 'react';
 import {
-  Animated as RNAnimated,
   Easing,
   Platform,
   Pressable,
+  Animated as RNAnimated,
   ScrollView,
   StyleSheet,
   View,
@@ -22,6 +23,7 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, FontFamilies } from '@/constants/theme';
+import { useOverlayPortal } from '@/hooks/overlay-portal-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const MENU_WIDTH = 288;
@@ -43,9 +45,11 @@ export type SideMenuProps = {
 };
 
 export function SideMenu({ visible, onClose }: SideMenuProps) {
-  const colorScheme = useColorScheme() ?? 'dark';
+  const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
   const router = useRouter();
+  const portalRef = useOverlayPortal();
 
   const panelX = useRef(new RNAnimated.Value(-MENU_WIDTH)).current;
   const backdropOpacity = useRef(new RNAnimated.Value(0)).current;
@@ -148,24 +152,46 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
 
   if (!visible) return null;
 
-  return (
+  const backdropContent = (
+    <RNAnimated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu} accessibilityRole="button" accessibilityLabel="Close menu">
+        {Platform.OS === 'web' ? (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              styles.backdropDim,
+              {
+                backgroundColor: isDark ? 'rgba(7, 10, 18, 0.6)' : 'rgba(0, 0, 0, 0.35)',
+                ...(Platform.OS === 'web' ? ({ backdropFilter: 'blur(10px)' } as Record<string, string>) : {}),
+              },
+            ]}
+          />
+        ) : Platform.OS === 'ios' ? (
+          <BlurView
+            intensity={50}
+            tint={isDark ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : (
+          <BlurView
+            intensity={40}
+            tint={isDark ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
+      </Pressable>
+    </RNAnimated.View>
+  );
+
+  const overlayContent = (
     <View style={[StyleSheet.absoluteFill, styles.overlay]} pointerEvents="box-none">
-      {/* Dimmed/blurred area — tap to close */}
-      <RNAnimated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu}>
-          {Platform.OS === 'ios' ? (
-            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(7, 10, 18, 0.75)' }]} />
-          )}
-        </Pressable>
-      </RNAnimated.View>
+      {backdropContent}
 
       {/* Menu panel — Pencil rKfsm: 288px, slides in from left */}
       <RNAnimated.View
         style={[
           styles.panel,
-          { backgroundColor: colorScheme === 'dark' ? '#070a12' : 'rgba(7, 10, 18, 0.98)' },
+          { backgroundColor: isDark ? theme.background : theme.surface },
           { transform: [{ translateX: panelX }] },
         ]}
       >
@@ -212,7 +238,7 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
                 <ThemedText style={[styles.menuLabel, { color: theme.text }]}>{item.label}</ThemedText>
               </Pressable>
               {index < menuItems.length - 1 ? (
-                <View style={[styles.divider, { backgroundColor: theme.accent }]} />
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
               ) : null}
             </View>
           ))}
@@ -224,23 +250,41 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
             closeMenu();
             router.replace('/(auth)/login');
           }}
-          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.9 }]}
+          style={({ pressed }) => [
+            styles.logoutBtn,
+            { backgroundColor: theme.primary },
+            pressed && { opacity: 0.9 },
+          ]}
         >
           <ThemedText style={styles.logoutText}>Log Out</ThemedText>
         </Pressable>
       </RNAnimated.View>
     </View>
   );
+
+  if (Platform.OS === 'web' && portalRef?.current) {
+    try {
+      const ReactDOM = require('react-dom');
+      const node = ReactDOM.findDOMNode(portalRef.current);
+      if (node && typeof document !== 'undefined' && document.body.contains(node as Node)) {
+        return ReactDOM.createPortal(overlayContent, node as Element);
+      }
+    } catch {
+      // fallback to in-tree render if portal fails
+    }
+  }
+  return overlayContent;
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    zIndex: 1000,
-    elevation: 1000,
+    zIndex: 1100,
+    elevation: 1100,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
   },
+  backdropDim: {},
   panel: {
     position: 'absolute',
     left: 0,
@@ -306,14 +350,12 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     width: 244,
-    opacity: 0.05,
   },
   logoutBtn: {
     marginHorizontal: 24,
-    marginBottom: 40,
+    marginBottom: 140,
     height: 40,
     borderRadius: 10,
-    backgroundColor: '#E21D20',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 18,

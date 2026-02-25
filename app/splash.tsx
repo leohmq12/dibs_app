@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Image, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DibsLogo } from '@/components/dibs-logo';
@@ -16,7 +17,7 @@ const SPLASH_OVERLAY = require('@/assets/images/splash_overlay.png');
 export default function SplashScreen() {
   const router = useRouter();
   const { isSignedIn } = useDemoSession();
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useViewportDimensions();
 
   useEffect(() => {
     const timer = setTimeout(() => {

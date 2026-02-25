@@ -1,7 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,11 +9,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 
 const FACE_CIRCLE_SIZE = 224;
 const FACE_CIRCLE_STROKE = 10;
-const TEAL_ARC_LENGTH = 270; // degrees (3/4 of circle from design)
-const CIRCLE_R = (FACE_CIRCLE_SIZE - FACE_CIRCLE_STROKE) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_R;
-const TEAL_DASH = (TEAL_ARC_LENGTH / 360) * CIRCUMFERENCE;
-const GREY_GAP = CIRCUMFERENCE - TEAL_DASH;
 
 export default function FaceEnrollScreen() {
   const router = useRouter();
@@ -67,33 +61,21 @@ export default function FaceEnrollScreen() {
           </View>
         </View>
 
-        {/* Central face guide circle */}
+        {/* Central face guide circle (pure RN ring, no SVG) */}
         <View style={styles.faceGuideWrap}>
           <View style={styles.faceCircleOuter}>
-            <Svg width={FACE_CIRCLE_SIZE} height={FACE_CIRCLE_SIZE} style={styles.faceCircleSvg}>
-              {/* Grey outer ring */}
-              <Circle
-                cx={FACE_CIRCLE_SIZE / 2}
-                cy={FACE_CIRCLE_SIZE / 2}
-                r={CIRCLE_R}
-                stroke="rgba(255,255,255,0.1)"
-                strokeWidth={5}
-                fill="transparent"
-              />
-              {/* Teal progress arc (270° from top) */}
-              <G transform={`rotate(-90 ${FACE_CIRCLE_SIZE / 2} ${FACE_CIRCLE_SIZE / 2})`}>
-                <Circle
-                  cx={FACE_CIRCLE_SIZE / 2}
-                  cy={FACE_CIRCLE_SIZE / 2}
-                  r={CIRCLE_R - 2}
-                  stroke={theme.accent}
-                  strokeWidth={10}
-                  fill="transparent"
-                  strokeLinecap="round"
-                  strokeDasharray={`${TEAL_DASH} ${GREY_GAP}`}
-                />
-              </G>
-            </Svg>
+            <View
+              style={[
+                styles.faceCircleRing,
+                {
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  width: FACE_CIRCLE_SIZE,
+                  height: FACE_CIRCLE_SIZE,
+                  borderRadius: FACE_CIRCLE_SIZE / 2,
+                  borderWidth: FACE_CIRCLE_STROKE / 2,
+                },
+              ]}
+            />
             <View style={[styles.faceCircleInner, { backgroundColor: theme.background }]}>
               {/* Placeholder for camera / face preview */}
             </View>
@@ -190,7 +172,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  faceCircleSvg: {
+  faceCircleRing: {
     position: 'absolute',
   },
   faceCircleInner: {
