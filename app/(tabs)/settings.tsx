@@ -12,7 +12,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Pill } from '@/components/ui/pill';
 import { SurfaceCard } from '@/components/ui/surface-card';
 import { Colors, FontFamilies } from '@/constants/theme';
-import { useDemoSession } from '@/hooks/demo-session';
+import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme, useSetColorScheme } from '@/hooks/use-color-scheme';
 
 export default function SettingsScreen() {
@@ -20,7 +20,7 @@ export default function SettingsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const setColorScheme = useSetColorScheme();
-  const { signOut } = useDemoSession();
+  const { user, signOut } = useAuth();
   const enableLayoutAnimations = process.env.EXPO_OS !== 'web';
   const insets = useSafeAreaInsets();
 
@@ -68,11 +68,11 @@ export default function SettingsScreen() {
 
           <Animated.View {...(enableLayoutAnimations ? { entering: FadeInUp.duration(240) } : {})}>
             <Section title="Account" theme={theme}>
-              <Row icon="person" label="Profile" value="John Doe" theme={theme} onPress={() => {}} />
+              <Row icon="person" label="Profile" value={user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'} theme={theme} onPress={() => {}} />
               <Row
                 icon="mail"
                 label="Email"
-                value="john.doe@example.com"
+                value={user?.email || 'No Email'}
                 theme={theme}
                 onPress={() => {}}
               />

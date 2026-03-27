@@ -9,22 +9,23 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
-import { useDemoSession } from '@/hooks/demo-session';
+import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { SurfaceCard } from '@/components/ui/surface-card';
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { isSignedIn } = useDemoSession();
+  const { session, isLoading } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 
   useEffect(() => {
+    if (isLoading) return;
     const timer = setTimeout(() => {
-      router.replace(isSignedIn ? '/(tabs)' : '/(auth)/login');
+      router.replace(session ? '/(tabs)' : '/(auth)/login');
     }, 900);
     return () => clearTimeout(timer);
-  }, [isSignedIn, router]);
+  }, [session, isLoading, router]);
 
   return (
     <ThemedView style={styles.screen}>

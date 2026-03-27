@@ -1,25 +1,26 @@
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
-import { useDemoSession } from '@/hooks/demo-session';
+import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { signIn } = useDemoSession();
+  const { signUp } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const enableLayoutAnimations = process.env.EXPO_OS !== 'web';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const inputBg = useMemo(
     () => (colorScheme === 'dark' ? theme.surface : theme.surface),
@@ -64,13 +65,20 @@ export default function SignupScreen() {
           />
 
           <Pressable
-            onPress={() => {
-              signIn();
+            disabled={loading}
+            onPress={async () => {
+              setLoading(true);
+              const { error } = await signUp(email, password);
+              setLoading(false);
+              if (error) {
+                Alert.alert('Sign up failed', error.message);
+                return;
+              }
               router.replace('/(tabs)');
             }}
-            style={({ pressed }) => [styles.primaryButton, { opacity: pressed ? 0.92 : 1, backgroundColor: theme.primary }]}>
+            style={({ pressed }) => [styles.primaryButton, { opacity: pressed || loading ? 0.7 : 1, backgroundColor: theme.primary }]}>
             <ThemedText style={{ color: '#FFFFFF', fontFamily: FontFamilies.semiBold }}>
-              Create account
+              {loading ? 'Creating account…' : 'Create account'}
             </ThemedText>
           </Pressable>
 

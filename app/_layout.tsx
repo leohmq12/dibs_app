@@ -11,7 +11,7 @@ import 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
-import { DemoSessionProvider } from '@/hooks/demo-session';
+import { AuthProvider } from '@/hooks/use-auth';
 import { ThemeModeProvider, useColorScheme } from '@/hooks/use-color-scheme';
 import {
   Poppins_400Regular,
@@ -60,9 +60,9 @@ export default function RootLayout() {
 
   return (
     <ThemeModeProvider>
-      <DemoSessionProvider>
+      <AuthProvider>
         <RootNavigator />
-      </DemoSessionProvider>
+      </AuthProvider>
     </ThemeModeProvider>
   );
 }
