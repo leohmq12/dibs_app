@@ -1,320 +1,282 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DibsLogo } from '@/components/dibs-logo';
+import { SideMenu } from '@/components/side-menu';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Pill } from '@/components/ui/pill';
-import { SurfaceCard } from '@/components/ui/surface-card';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type ActivityItem = {
   id: string;
   title: string;
-  timestamp: string;
-  deviceId: string;
-  status: 'VERIFIED' | 'BLOCKED';
+  subtitle: string;
+  time: string;
+  type: 'success' | 'danger' | 'blue';
 };
 
-const RECENT_ACTIVITY: ActivityItem[] = [
-  {
-    id: '1',
-    title: 'Vault item accessed',
-    timestamp: 'Today · 10:42 AM',
-    deviceId: 'android-8f2c',
-    status: 'VERIFIED',
-  },
-  {
-    id: '2',
-    title: 'Unauthorized attempt',
-    timestamp: 'Today · 09:18 AM',
-    deviceId: 'android-8f2c',
-    status: 'BLOCKED',
-  },
-  {
-    id: '3',
-    title: 'Liveness check completed',
-    timestamp: 'Yesterday · 7:03 PM',
-    deviceId: 'android-8f2c',
-    status: 'VERIFIED',
-  },
+const ACTIVITY: ActivityItem[] = [
+  { id: '1', title: 'Biometric Verified', subtitle: 'Gallery Access', time: '2m ago', type: 'success' },
+  { id: '2', title: 'Screenshot Blocked', subtitle: 'Unauthorized Attempt', time: '1h ago', type: 'danger' },
+  { id: '3', title: 'Vault Encryption Cycle', subtitle: 'Automated Routine', time: '3h ago', type: 'blue' },
 ];
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const enableLayoutAnimations = process.env.EXPO_OS !== 'web';
+  const router = useRouter();
+  const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <LinearGradient
-            colors={
-              colorScheme === 'dark'
-                ? ['rgba(34, 198, 217, 0.16)', 'rgba(7, 10, 18, 0)']
-                : ['rgba(34, 198, 217, 0.18)', 'rgba(246, 247, 251, 0)']
-            }
-            start={{ x: 0.2, y: 0 }}
-            end={{ x: 0.8, y: 1 }}
-            style={styles.topGlow}
-          />
-        </View>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Animated.View
-            style={styles.headerRow}
-            {...(enableLayoutAnimations ? { entering: FadeInDown.duration(240) } : {})}>
-            <SurfaceCard variant="glass" style={styles.heroCard}>
-              <View style={styles.heroTopRow}>
-                <View style={[styles.headerIconWrap, { backgroundColor: theme.surface }]}>
-                  <MaterialIcons name="verified-user" size={18} color={theme.primary} />
-                </View>
-                <View style={styles.headerText}>
-                  <ThemedText type="title" style={styles.headerTitle}>
-                    DIBS
-                  </ThemedText>
-                  <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.medium }}>
-                    Protection Active
-                  </ThemedText>
-                </View>
-                <Pill
-                  style={{ borderColor: 'transparent', backgroundColor: theme.surface }}
-                  tone="neutral">
-                  <MaterialIcons name="shield" size={16} color={theme.primary} />
-                </Pill>
-              </View>
-              <View style={styles.heroMetaRow}>
-                <Pill tone="success" style={styles.metaPill}>
-                  <MaterialIcons name="lock" size={14} color={theme.success} />
-                  <ThemedText style={{ fontFamily: FontFamilies.medium, color: theme.text, fontSize: 11 }}>
-                    Vault Locked
-                  </ThemedText>
-                </Pill>
-                <Pill tone="accent" style={styles.metaPill}>
-                  <MaterialIcons name="bolt" size={14} color={theme.accent} />
-                  <ThemedText style={{ fontFamily: FontFamilies.medium, color: theme.text, fontSize: 11 }}>
-                    Liveness Ready
-                  </ThemedText>
-                </Pill>
-              </View>
-            </SurfaceCard>
-          </Animated.View>
-
-          <Animated.View
-            style={styles.statsRow}
-            {...(enableLayoutAnimations ? { entering: FadeInUp.duration(240) } : {})}>
-            <SurfaceCard style={styles.bentoCard}>
-              <View style={styles.cardTopRow}>
-                <LinearGradient
-                  colors={
-                    colorScheme === 'dark'
-                      ? ['rgba(34, 198, 217, 0.24)', 'rgba(106, 168, 255, 0.10)']
-                      : ['rgba(34, 198, 217, 0.20)', 'rgba(10, 46, 101, 0.08)']
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.cardIcon}>
-                  <MaterialIcons name="image" size={16} color={theme.primary} />
-                </LinearGradient>
-                <View style={{ flex: 1 }}>
-                  <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.medium }}>
-                    Images
-                  </ThemedText>
-                  <ThemedText style={styles.cardValue}>12</ThemedText>
-                </View>
-              </View>
-            </SurfaceCard>
-
-            <SurfaceCard style={styles.bentoCard}>
-              <View style={styles.cardTopRow}>
-                <LinearGradient
-                  colors={
-                    colorScheme === 'dark'
-                      ? ['rgba(106, 168, 255, 0.22)', 'rgba(34, 198, 217, 0.10)']
-                      : ['rgba(10, 46, 101, 0.12)', 'rgba(34, 198, 217, 0.16)']
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.cardIcon}>
-                  <MaterialIcons name="videocam" size={16} color={theme.primary} />
-                </LinearGradient>
-                <View style={{ flex: 1 }}>
-                  <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.medium }}>
-                    Videos
-                  </ThemedText>
-                  <ThemedText style={styles.cardValue}>4</ThemedText>
-                </View>
-              </View>
-            </SurfaceCard>
-          </Animated.View>
-
-          <View style={styles.sectionHeader}>
-            <ThemedText type="subtitle">Recent Activity</ThemedText>
-            <Pill style={styles.sectionPill} tone="neutral">
-              <ThemedText style={{ fontFamily: FontFamilies.medium, fontSize: 11, color: theme.mutedText }}>
-                View all
-              </ThemedText>
-              <MaterialIcons name="chevron-right" size={16} color={theme.mutedText} />
-            </Pill>
+          {/* Top bar: sidebar (g59oc) | centered logo (BM6JB) | notification (pKd4o) */}
+          <View style={styles.topBar}>
+            <Pressable
+              onPress={() => setSideMenuOpen(true)}
+              style={({ pressed }) => [styles.topBarButton, pressed && styles.topBarButtonPressed]}
+              hitSlop={12}
+              accessibilityLabel="Open menu"
+            >
+              <MaterialIcons name="menu" size={28} color={theme.text} />
+            </Pressable>
+            <View style={styles.logoRow}>
+              <DibsLogo width={110} height={42} />
+            </View>
+            <Pressable
+              onPress={() => {}}
+              style={({ pressed }) => [styles.topBarButton, styles.topBarButtonRight, pressed && styles.topBarButtonPressed]}
+              hitSlop={12}
+              accessibilityLabel="Notifications"
+            >
+              <MaterialIcons name="notifications" size={26} color={theme.text} />
+              <View style={[styles.notificationBadge, { backgroundColor: theme.primary }]} />
+            </Pressable>
+          </View>
+          <View style={styles.header}>
+            <View style={styles.avatarWrap}>
+              <Image
+                source={require('../../assets/images/face.png')}
+                style={styles.avatar}
+              />
+            </View>
+            <View style={styles.userInfo}>
+              <ThemedText style={[styles.welcomeLabel, { color: theme.mutedText }]}>Welcome back,</ThemedText>
+              <ThemedText style={[styles.userName, { color: theme.text }]}>Roger Smith</ThemedText>
+            </View>
+            <View
+              style={[
+                styles.protectedPill,
+                {
+                  backgroundColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.1)' : 'rgba(34, 198, 217, 0.08)',
+                  borderColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.2)' : 'rgba(34, 198, 217, 0.2)',
+                },
+              ]}>
+              <MaterialIcons name="verified-user" size={12} color={theme.accent} />
+              <ThemedText style={[styles.protectedText, { color: theme.accent }]}>Protected</ThemedText>
+            </View>
           </View>
 
-          <Animated.View
-            style={[styles.listCard, { backgroundColor: theme.surface2, borderColor: theme.border }]}
-            {...(enableLayoutAnimations ? { entering: FadeInUp.duration(260).delay(70) } : {})}>
-            {RECENT_ACTIVITY.map((item, index) => {
-              const isBlocked = item.status === 'BLOCKED';
-              const statusColor = isBlocked ? theme.danger : theme.success;
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-              return (
+          <View style={styles.statsRow}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.statCard,
+                {
+                  backgroundColor: theme.cardTint,
+                  borderColor: theme.cardTintBorder,
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}>
+              <LinearGradient
+                colors={theme.primary === '#E21D20' ? ['#FF3B3E', '#E21D20'] : theme.dangerGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.statIcon}>
+                <MaterialIcons name="image" size={18} color="#FFF" />
+              </LinearGradient>
+              <ThemedText style={[styles.statValue, { color: theme.text }]}>1,240</ThemedText>
+              <ThemedText style={[styles.statLabel, { color: theme.mutedText }]}>protected images</ThemedText>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.statCard,
+                {
+                  backgroundColor: theme.cardTint,
+                  borderColor: theme.cardTintBorder,
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}>
+              <LinearGradient
+                colors={theme.blueGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.statIcon}>
+                <MaterialIcons name="videocam" size={18} color="#FFF" />
+              </LinearGradient>
+              <ThemedText style={[styles.statValue, { color: theme.text }]}>315</ThemedText>
+              <ThemedText style={[styles.statLabel, { color: theme.mutedText }]}>protected videos</ThemedText>
+            </Pressable>
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <ThemedText style={[styles.sectionTitle, { color: theme.text }]}>Recent Activity</ThemedText>
+            <Pressable onPress={() => router.push('/(tabs)/logs')} hitSlop={8}>
+              <ThemedText style={[styles.viewLogText, { color: theme.accent }]}>View Log</ThemedText>
+            </Pressable>
+          </View>
+
+          <View style={[styles.activityList, { backgroundColor: theme.cardTint, borderWidth: 1, borderColor: theme.cardTintBorder }]}>
+            {ACTIVITY.map((item, index) => (
                 <View
                   key={item.id}
                   style={[
                     styles.activityRow,
-                    index > 0 ? { borderTopWidth: 1, borderTopColor: theme.border } : null,
+                    index > 0 && { borderTopWidth: 1, borderTopColor: theme.cardTintBorder },
                   ]}>
-                  <View style={styles.activityLeft}>
-                    <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-                    <View style={styles.activityText}>
-                      <ThemedText style={{ fontFamily: FontFamilies.semiBold }}>{item.title}</ThemedText>
-                      <ThemedText style={{ color: theme.mutedText }}>
-                        {item.timestamp} · {item.deviceId}
-                      </ThemedText>
+                  <View style={[styles.activityIcon, { backgroundColor: item.type === 'success' ? 'rgba(57, 198, 149, 0.2)' : item.type === 'danger' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(96, 165, 250, 0.2)' }]}>
+                    {item.type === 'success' ? (
+                      <MaterialIcons name="verified-user" size={18} color={theme.success} />
+                    ) : item.type === 'danger' ? (
+                      <MaterialIcons name="block" size={18} color={theme.danger} />
+                    ) : (
+                      <MaterialIcons name="sync" size={18} color={theme.blueGradient[0]} />
+                    )}
+                  </View>
+                  <View style={styles.activityBody}>
+                    <ThemedText style={[styles.activityTitle, { color: theme.text }]}>{item.title}</ThemedText>
+                    <View style={styles.activityMeta}>
+                      <ThemedText style={[styles.activitySubtitle, { color: theme.mutedText }]}>{item.subtitle}</ThemedText>
+                      <View style={[styles.activityDot, { backgroundColor: theme.mutedText }]} />
+                      <ThemedText style={[styles.activityTime, { color: theme.mutedText }]}>{item.time}</ThemedText>
                     </View>
                   </View>
-
-                  <MaterialIcons
-                    name={isBlocked ? 'block' : 'check-circle'}
-                    size={18}
-                    color={statusColor}
-                  />
+                  <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.5 }} />
                 </View>
-              );
-            })}
-          </Animated.View>
+            ))}
+          </View>
         </ScrollView>
       </SafeAreaView>
+      <SideMenu visible={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
+  screen: { flex: 1 },
+  safeArea: { flex: 1 },
+  content: { paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 20,
+    paddingHorizontal: 0,
   },
-  safeArea: {
-    flex: 1,
+  topBarButton: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  topGlow: {
+  topBarButtonRight: { position: 'relative' },
+  topBarButtonPressed: { opacity: 0.7 },
+  notificationBadge: {
     position: 'absolute',
-    left: -40,
-    right: -40,
-    top: -40,
-    height: 320,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    paddingTop: 4,
-  },
-  headerRow: {
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  headerIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    flex: 1,
-  },
-  headerTitle: {
-    marginBottom: 2,
-  },
-  heroCard: {
-    padding: 12,
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  heroMetaRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 10,
-  },
-  metaPill: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  bentoCard: {
-    flex: 1,
-    padding: 12,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cardIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardValue: {
-    fontSize: 24,
-    fontFamily: FontFamilies.semiBold,
-    lineHeight: 28,
-  },
-  sectionHeader: {
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionPill: {
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-  },
-  listCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  activityRow: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  activityLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    paddingRight: 12,
-  },
-  statusDot: {
+    top: 8,
+    right: 8,
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 10,
   },
-  activityText: {
+  logoRow: {
     flex: 1,
-    gap: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 16,
+  },
+  avatarWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  avatar: { width: '100%', height: '100%', borderRadius: 28 },
+  userInfo: { flex: 1, minWidth: 0 },
+  welcomeLabel: { fontSize: 13, lineHeight: 20 },
+  userName: { fontSize: 20, fontFamily: FontFamilies.medium, letterSpacing: -1, lineHeight: 30 },
+  protectedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 40,
+    borderWidth: 1,
+  },
+  protectedText: { fontSize: 11, fontFamily: FontFamilies.medium },
+  divider: { height: 1, marginVertical: 10, opacity: 0.05 },
+  statsRow: { flexDirection: 'row', gap: 19, marginBottom: 16 },
+  statCard: {
+    flex: 1,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 16,
+    minHeight: 128,
+  },
+  statIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  statValue: { fontSize: 24, fontFamily: FontFamilies.semiBold, lineHeight: 30 },
+  statLabel: { fontSize: 10, letterSpacing: 1, lineHeight: 30, textTransform: 'lowercase' },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sectionTitle: { fontSize: 20, fontFamily: FontFamilies.semiBold, lineHeight: 30 },
+  viewLogText: { fontSize: 12, fontFamily: FontFamilies.medium },
+  activityList: { borderRadius: 18, overflow: 'hidden' },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  activityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityBody: { flex: 1, minWidth: 0 },
+  activityTitle: { fontSize: 14, fontFamily: FontFamilies.regular, lineHeight: 30 },
+  activityMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  activitySubtitle: { fontSize: 12 },
+  activityDot: { width: 3, height: 3, borderRadius: 1.5 },
+  activityTime: { fontSize: 12 },
 });

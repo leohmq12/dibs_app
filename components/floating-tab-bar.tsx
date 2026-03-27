@@ -1,54 +1,128 @@
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export function FloatingTabBar({ state, descriptors, navigation }: any) {
+import { ThemedText } from '@/components/themed-text';
+import { Colors, FontFamilies } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
+
+const TABS = [
+  { name: 'index', label: 'Home', icon: 'home' as const },
+  { name: 'vault', label: 'Vault', icon: 'lock' as const },
+  { name: 'logs', label: 'Logs', icon: 'access-time' as const },
+  { name: 'settings', label: 'Settings', icon: 'settings' as const },
+];
+
+// Pencil design: Prkcx (bar 375×64), aX8Lv (FAB 68, stroke 11), tab groups at x 16, 87, 262, 313
+const DESIGN_WIDTH = 375;
+const BAR_HEIGHT = 64;
+const FAB_SIZE = 68;
+// Tab center X from Pencil (group x + width/2): 16+17.5, 87+15, 262+13.5, 313+23
+const TAB_CENTER_RATIOS = [33.5 / DESIGN_WIDTH, 102 / DESIGN_WIDTH, 275.5 / DESIGN_WIDTH, 336 / DESIGN_WIDTH];
+
+const FAB_SLOT_BOTTOM = BAR_HEIGHT - FAB_SIZE / 2;
+const TAB_INACTIVE_OPACITY = 0.3;
+
+const TAB_BUTTON_WIDTH = 52;
+const TAB_BUTTON_WIDTH_SETTINGS = 58;
+
+export function FloatingTabBar({ state, navigation }: any) {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { width: screenWidth } = useViewportDimensions();
+  const bottomPadding = Math.max(insets.bottom, 12);
 
-  const tabs = [
-    { name: 'Home', icon: 'home' as const },
-    { name: 'Vault', icon: 'lock' as const },
-    { name: 'Logs', icon: 'list' as const },
-    { name: 'Settings', icon: 'settings' as const },
-  ];
+  const tabColor = theme.tabIconSelected ?? theme.accent;
+  const fabFill = theme.primary;
 
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.tabBar, { backgroundColor: theme.surface2, borderColor: theme.border }]}>
-        {state.routes.map((route: any, index: number) => {
-          const isFocused = state.index === index;
+      <View style={[styles.tabBarContainer, { width: screenWidth }]}>
+        <Image
+          source={
+            colorScheme === 'dark'
+              ? require('@/assets/images/nav_dark.png')
+              : require('@/assets/images/nav_light.png')
+          }
+          style={[StyleSheet.absoluteFill, { width: screenWidth, height: BAR_HEIGHT }]}
+          resizeMode="stretch"
+        />
+        <View style={styles.tabBarContent}>
+          {TABS.map((tab, index) => {
+            const route = state.routes.find((r) => r.name === tab.name) ?? state.routes[index];
+            const routeIndex = state.routes.findIndex((r) => r.name === tab.name);
+            const isFocused = routeIndex >= 0 ? state.index === routeIndex : state.index === index;
+            const btnWidth = index === 3 ? TAB_BUTTON_WIDTH_SETTINGS : TAB_BUTTON_WIDTH;
+            const centerX = screenWidth * TAB_CENTER_RATIOS[index];
+            const left = centerX - btnWidth / 2;
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
+            const onPress = () => {
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(tab.name);
+              }
+            };
 
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          };
-
-          return (
-            <TouchableOpacity
-              key={index}
-              onPress={onPress}
-              style={styles.tabButton}
-            >
-              <MaterialIcons
-                name={tabs[index].icon}
-                size={22}
-                color={isFocused ? theme.primary : theme.icon}
-              />
-              {isFocused && <View style={[styles.activeDot, { backgroundColor: theme.primary }]} />}
-            </TouchableOpacity>
-          );
-        })}
+            return (
+              <Pressable
+                key={route.key}
+                onPress={onPress}
+                style={[
+                  styles.tabButton,
+                  { left, width: btnWidth, opacity: isFocused ? 1 : TAB_INACTIVE_OPACITY },
+                ]}
+                accessibilityRole="tab"
+                accessibilityState={isFocused ? { selected: true } : {}}>
+                <MaterialIcons
+                  name={tab.icon}
+                  size={26}
+                  color={tabColor}
+                />
+                <ThemedText
+                  numberOfLines={1}
+                  style={[
+                    styles.tabLabel,
+                    {
+                      color: tabColor,
+                      fontFamily: isFocused ? FontFamilies.medium : FontFamilies.regular,
+                    },
+                  ]}>
+                  {tab.label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+          <View style={[styles.fabSlot, { marginLeft: -FAB_SIZE / 2 }]}>
+            <Pressable
+              onPress={() => router.push('/modal')}
+              style={({ pressed }) => [
+                styles.fab,
+                { backgroundColor: fabFill, opacity: pressed ? 0.9 : 1 },
+              ]}>
+              <ThemedText style={styles.fabIcon}>+</ThemedText>
+            </Pressable>
+          </View>
+        </View>
       </View>
+      <View
+        style={[
+          styles.gestureBlock,
+          {
+            height: bottomPadding,
+            backgroundColor: theme.background,
+            width: screenWidth,
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -56,32 +130,63 @@ export function FloatingTabBar({ state, descriptors, navigation }: any) {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    bottom: 20,
-    width: '100%',
+    bottom: 0,
+    left: 0,
+    right: 0,
     alignItems: 'center',
+    zIndex: 10,
+    elevation: 10,
   },
-  tabBar: {
-    flexDirection: 'row',
-    width: '90%',
-    height: 65,
-    borderRadius: 35,
-    justifyContent: 'space-around',
+  gestureBlock: {
+    alignSelf: 'stretch',
+  },
+  tabBarContainer: {
+    height: BAR_HEIGHT,
+    position: 'relative',
     alignItems: 'center',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 8,
+    justifyContent: 'flex-end',
+    overflow: 'visible',
+  },
+  tabBarContent: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingBottom: 8,
+    paddingTop: 12,
   },
   tabButton: {
+    position: 'absolute',
+    width: TAB_BUTTON_WIDTH,
+    bottom: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
+    gap: 2,
   },
-  activeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 10,
-    marginTop: 4,
+  tabLabel: {
+    fontSize: 12,
+    overflow: 'hidden',
+  },
+  fabSlot: {
+    position: 'absolute',
+    bottom: FAB_SLOT_BOTTOM,
+    left: '50%',
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fab: {
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: FAB_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabIcon: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontFamily: FontFamilies.medium,
+    lineHeight: 32,
   },
 });

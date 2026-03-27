@@ -1,47 +1,63 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Design system from appUI.pen — DIBS mobile app.
+ * Supports light and dark mode. Mobile-first.
  */
 
 import { Platform } from 'react-native';
 
-const primaryLight = '#0A2E65';
-const accentLight = '#00C2D1';
-const primaryDark = '#6AA8FF';
-const accentDark = '#22C6D9';
+// Design tokens from approved UI
+const primaryRed = '#E21D20';
+const accentTeal = '#22C6D9';
+const brandYellow = '#FCF425';
 
 export const Colors = {
   light: {
     text: '#0F1A2B',
     mutedText: '#5E6B82',
     background: '#F7F8FB',
-    surface: '#F1F4F9',
+    surface: '#FFFFFF',
     surface2: '#FFFFFF',
     border: '#E2E7F0',
-    primary: primaryLight,
-    accent: accentLight,
+    primary: primaryRed,
+    accent: accentTeal,
+    brandYellow,
     success: '#27AE60',
+    successGradient: ['#39C695', '#119E6D'] as const,
     danger: '#EB5757',
-    tint: accentLight,
+    dangerGradient: ['#EF4444', '#B30808'] as const,
+    blueGradient: ['#60A5FA', '#2469BE'] as const,
+    tint: accentTeal,
     icon: '#64708A',
     tabIconDefault: '#7C889E',
-    tabIconSelected: primaryLight,
+    tabIconSelected: accentTeal,
+    inputBg: 'rgba(15, 26, 43, 0.06)',
+    inputBorder: 'rgba(15, 26, 43, 0.12)',
+    cardTint: 'rgba(34, 198, 217, 0.08)',
+    cardTintBorder: 'rgba(34, 198, 217, 0.12)',
   },
   dark: {
-    text: '#EAF1FF',
-    mutedText: '#9FB0CC',
+    text: '#FFFFFF',
+    mutedText: 'rgba(255, 255, 255, 0.7)',
     background: '#070A12',
-    surface: '#0E1423',
-    surface2: '#0A1020',
-    border: '#1D2A44',
-    primary: primaryDark,
-    accent: accentDark,
+    surface: 'rgba(34, 198, 217, 0.05)',
+    surface2: 'rgba(34, 198, 217, 0.05)',
+    border: 'rgba(255, 255, 255, 0.08)',
+    primary: primaryRed,
+    accent: accentTeal,
+    brandYellow,
     success: '#27AE60',
+    successGradient: ['#39C695', '#119E6D'] as const,
     danger: '#EB5757',
-    tint: accentDark,
-    icon: '#9FB0CC',
-    tabIconDefault: '#9FB0CC',
-    tabIconSelected: accentDark,
+    dangerGradient: ['#EF4444', '#B30808'] as const,
+    blueGradient: ['#60A5FA', '#2469BE'] as const,
+    tint: accentTeal,
+    icon: 'rgba(255, 255, 255, 0.7)',
+    tabIconDefault: 'rgba(255, 255, 255, 0.5)',
+    tabIconSelected: accentTeal,
+    inputBg: 'rgba(7, 10, 18, 0.1)',
+    inputBorder: 'rgba(255, 255, 255, 0.2)',
+    cardTint: 'rgba(34, 198, 217, 0.05)',
+    cardTintBorder: 'rgba(34, 198, 217, 0.1)',
   },
 };
 
@@ -55,13 +71,9 @@ export const FontFamilies = {
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {

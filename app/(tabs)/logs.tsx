@@ -1,209 +1,267 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Pill } from '@/components/ui/pill';
-import { SurfaceCard } from '@/components/ui/surface-card';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type LogItem = {
   id: string;
-  eventType: 'VERIFIED' | 'BLOCKED';
-  mediaId: string;
-  deviceId: string;
-  timestamp: string;
+  name: string;
+  details: string;
+  device: string;
+  status: 'verified' | 'blocked';
+  type: 'success' | 'danger';
 };
 
-const LOGS: LogItem[] = [
+const LOG_ITEMS: LogItem[] = [
   {
     id: '1',
-    eventType: 'VERIFIED',
-    mediaId: 'media-0012',
-    deviceId: 'android-8f2c',
-    timestamp: '2026-02-04 10:42:12',
+    name: 'John Doe',
+    details: 'Biometric Match • ID: 8821',
+    device: 'iPhone 13 Pro',
+    status: 'verified',
+    type: 'success',
   },
   {
     id: '2',
-    eventType: 'BLOCKED',
-    mediaId: 'media-0009',
-    deviceId: 'android-8f2c',
-    timestamp: '2026-02-04 09:18:44',
+    name: 'Unknown User',
+    details: 'Face Mismatch • ID: N/A',
+    device: 'Samsung S21',
+    status: 'blocked',
+    type: 'danger',
   },
   {
     id: '3',
-    eventType: 'VERIFIED',
-    mediaId: 'media-0004',
-    deviceId: 'android-8f2c',
-    timestamp: '2026-02-03 19:03:06',
-  },
-  {
-    id: '4',
-    eventType: 'VERIFIED',
-    mediaId: 'media-0002',
-    deviceId: 'android-8f2c',
-    timestamp: '2026-02-03 16:11:29',
+    name: 'Sarah Miller',
+    details: 'Fingerprint • ID: 4102',
+    device: 'MacBook Pro',
+    status: 'verified',
+    type: 'success',
   },
 ];
+
+// Floating download FAB sits above tab bar — Pencil VxSUD (teal 46px) + RrBHK (download icon)
+const DOWNLOAD_FAB_SIZE = 46;
+const TAB_BAR_HEIGHT = 76;
 
 export default function LogsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
+  const [search, setSearch] = useState('');
+
+  const exportLogs = () => {
+    // TODO: wire to real export (share file, save to storage)
+    Alert.alert('Export Logs', 'Log export will be available here.');
+  };
 
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <LinearGradient
-            colors={
-              colorScheme === 'dark'
-                ? ['rgba(34, 198, 217, 0.12)', 'rgba(7, 10, 18, 0)']
-                : ['rgba(34, 198, 217, 0.10)', 'rgba(246, 247, 251, 0)']
-            }
-            start={{ x: 0.15, y: 0 }}
-            end={{ x: 0.9, y: 1 }}
-            style={styles.topGlow}
+        {/* Header — Pencil: Ma4qu (icon), 667xr (title), pN3cI + tMduy (filter) */}
+        <View style={styles.header}>
+          <View style={[styles.headerIcon, { backgroundColor: theme.cardTint }]}>
+            <MaterialIcons name="access-time" size={24} color={theme.accent} />
+          </View>
+          <ThemedText style={[styles.headerTitle, { color: theme.text }]}>Audit & Access Logs</ThemedText>
+          <Pressable
+            style={[styles.filterButton, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}
+            onPress={() => {}}
+            hitSlop={8}
+          >
+            <MaterialIcons name="filter-list" size={18} color={theme.text} />
+          </Pressable>
+        </View>
+
+        {/* Search — Pencil MeZcF (343x36, radius 6) */}
+        <View style={[styles.searchWrap, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
+          <MaterialIcons name="search" size={18} color={theme.mutedText} />
+          <TextInput
+            placeholder="Search logs..."
+            placeholderTextColor={theme.mutedText}
+            value={search}
+            onChangeText={setSearch}
+            style={[styles.searchInput, { color: theme.text }]}
           />
         </View>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <SurfaceCard variant="glass" style={styles.heroCard}>
-              <View style={styles.heroRow}>
-                <View style={[styles.heroIcon, { backgroundColor: theme.surface }]}>
-                  <MaterialIcons name="list" size={18} color={theme.primary} />
+
+        {/* Section — TODAY + Events pill */}
+        <View style={styles.sectionRow}>
+          <ThemedText style={[styles.sectionLabel, { color: theme.text }]}>TODAY</ThemedText>
+          <View style={[styles.eventPill, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
+            <ThemedText style={[styles.eventPillText, { color: theme.accent }]}>{LOG_ITEMS.length} Events</ThemedText>
+          </View>
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          {LOG_ITEMS.map((item) => (
+            <View
+              key={item.id}
+              style={[styles.logCard, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
+              <View style={styles.logTopRow}>
+                <View
+                  style={[
+                    styles.logIcon,
+                    { backgroundColor: item.type === 'success' ? 'rgba(57, 198, 149, 0.2)' : 'rgba(239, 68, 68, 0.2)' },
+                  ]}>
+                  <MaterialIcons
+                    name={item.type === 'success' ? 'check-circle' : 'block'}
+                    size={20}
+                    color={item.type === 'success' ? theme.success : theme.danger}
+                  />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <ThemedText type="title" style={{ marginBottom: 2 }}>
-                    Audit Logs
-                  </ThemedText>
-                  <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.medium }}>
-                    Verified and blocked attempts, for accountability.
+                <ThemedText style={[styles.logName, { color: theme.text }]}>{item.name}</ThemedText>
+                <View
+                  style={[
+                    styles.statusButton,
+                    item.status === 'verified'
+                      ? { backgroundColor: theme.surface, borderColor: theme.border }
+                      : { backgroundColor: theme.danger },
+                  ]}>
+                  <ThemedText
+                    style={[
+                      styles.statusButtonText,
+                      { color: item.status === 'verified' ? theme.text : '#FFF' },
+                    ]}>
+                    {item.status === 'verified' ? 'Verified' : 'Blocked'}
                   </ThemedText>
                 </View>
-                <Pill tone="neutral" style={styles.filterPill}>
-                  <MaterialIcons name="tune" size={15} color={theme.mutedText} />
-                </Pill>
               </View>
-            </SurfaceCard>
-          </View>
-
-          <View style={styles.list}>
-            {LOGS.map((item) => {
-              const isBlocked = item.eventType === 'BLOCKED';
-              const statusColor = isBlocked ? theme.danger : theme.success;
-              return (
-                <SurfaceCard key={item.id} style={styles.logCard}>
-                  <View style={styles.logTopRow}>
-                    <Pill tone={isBlocked ? 'danger' : 'success'} style={styles.statusPill}>
-                      <MaterialIcons
-                        name={isBlocked ? 'block' : 'check-circle'}
-                        size={14}
-                        color={statusColor}
-                      />
-                      <ThemedText style={{ fontFamily: FontFamilies.medium, fontSize: 11, color: statusColor }}>
-                        {item.eventType}
-                      </ThemedText>
-                    </Pill>
-                    <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.medium, fontSize: 11 }}>
-                      {item.timestamp}
-                    </ThemedText>
-                  </View>
-
-                  <View style={styles.logDetails}>
-                    <View style={styles.kvRow}>
-                      <ThemedText style={[styles.kLabel, { color: theme.mutedText }]}>Media</ThemedText>
-                      <ThemedText style={styles.kValue}>{item.mediaId}</ThemedText>
-                    </View>
-                    <View style={styles.kvRow}>
-                      <ThemedText style={[styles.kLabel, { color: theme.mutedText }]}>Device</ThemedText>
-                      <ThemedText style={styles.kValue}>{item.deviceId}</ThemedText>
-                    </View>
-                  </View>
-                </SurfaceCard>
-              );
-            })}
-          </View>
+              <ThemedText style={[styles.logDetails, { color: theme.mutedText }]}>{item.details}</ThemedText>
+              <View style={[styles.deviceTag, { backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+                <MaterialIcons name="smartphone" size={14} color={theme.mutedText} />
+                <ThemedText style={[styles.deviceText, { color: theme.mutedText }]}>{item.device}</ThemedText>
+              </View>
+            </View>
+          ))}
         </ScrollView>
+
+        {/* Floating download FAB — Pencil VxSUD (teal circle) + RrBHK (download icon) */}
+        <Pressable
+          onPress={exportLogs}
+          style={({ pressed }) => [
+            styles.downloadFab,
+            {
+              backgroundColor: theme.accent,
+              bottom: TAB_BAR_HEIGHT + insets.bottom + 12,
+              opacity: pressed ? 0.9 : 1,
+            },
+          ]}
+        >
+          <MaterialIcons name="download" size={24} color="#FFF" />
+        </Pressable>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  topGlow: {
-    position: 'absolute',
-    left: -40,
-    right: -40,
-    top: -60,
-    height: 260,
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 110,
-  },
+  screen: { flex: 1 },
+  safeArea: { flex: 1 },
   header: {
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  heroCard: {
-    padding: 12,
-  },
-  heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
+    gap: 12,
   },
-  heroIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 16,
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  filterPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+  headerTitle: { fontSize: 18, fontFamily: FontFamilies.semiBold, lineHeight: 30, flex: 1 },
+  filterButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
-  list: {
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
+    marginHorizontal: 16,
+    height: 36,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    marginBottom: 12,
   },
+  searchInput: { flex: 1, fontSize: 14, fontFamily: FontFamilies.regular, paddingVertical: 0 },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  sectionLabel: { fontSize: 14, fontFamily: FontFamilies.medium, letterSpacing: 1 },
+  eventPill: {
+    paddingHorizontal: 13,
+    paddingVertical: 6,
+    borderRadius: 40,
+    borderWidth: 1,
+  },
+  eventPillText: { fontSize: 10, fontFamily: FontFamilies.medium },
+  divider: { height: 1, marginHorizontal: 16, marginBottom: 12, opacity: 0.1 },
+  list: { paddingHorizontal: 16, paddingBottom: 140, gap: 12 },
   logCard: {
-    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 15,
   },
   logTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 8,
   },
-  statusPill: {
+  logIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logName: { fontSize: 16, fontFamily: FontFamilies.medium, flex: 1 },
+  statusButton: {
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    paddingHorizontal: 8,
+    borderRadius: 5,
+    borderWidth: 1,
   },
-  logDetails: {
-    marginTop: 10,
-    gap: 6,
-  },
-  kvRow: {
+  statusButtonText: { fontSize: 12, fontFamily: FontFamilies.medium },
+  logDetails: { fontSize: 13, marginLeft: 50, marginBottom: 8 },
+  deviceTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 4,
   },
-  kLabel: {
-    fontFamily: FontFamilies.medium,
-    fontSize: 11,
-  },
-  kValue: {
-    fontFamily: FontFamilies.semiBold,
-    fontSize: 11,
-    letterSpacing: 0.2,
+  deviceText: { fontSize: 12 },
+  downloadFab: {
+    position: 'absolute',
+    right: 16,
+    width: DOWNLOAD_FAB_SIZE,
+    height: DOWNLOAD_FAB_SIZE,
+    borderRadius: DOWNLOAD_FAB_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

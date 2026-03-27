@@ -1,17 +1,17 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import 'react-native-reanimated';
-
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
-import { AuthProvider } from '@/hooks/use-auth';
+import { MOBILE_VIEWPORT, WebViewportContext } from '@/hooks/use-viewport-dimensions';
+import { DemoSessionProvider } from '@/hooks/demo-session';
 import { ThemeModeProvider, useColorScheme } from '@/hooks/use-color-scheme';
 import {
   Poppins_400Regular,
@@ -32,6 +32,7 @@ const WEB_SCREENS = [
   { label: 'Splash', path: '/splash' },
   { label: 'Login', path: '/(auth)/login' },
   { label: 'Signup', path: '/(auth)/signup' },
+  { label: 'Face Enroll', path: '/(auth)/face-enroll' },
   { label: 'Home', path: '/(tabs)' },
   { label: 'Vault', path: '/(tabs)/vault' },
   { label: 'Logs', path: '/(tabs)/logs' },
@@ -118,45 +119,29 @@ function RootNavigator() {
   );
 }
 
+const PHONE_BEZEL = 12;
+const PHONE_FRAME_W = MOBILE_VIEWPORT.width + PHONE_BEZEL * 2;
+const PHONE_FRAME_H = MOBILE_VIEWPORT.height + PHONE_BEZEL * 2;
+
 function WebShell({ children, colorScheme }: { children: ReactNode; colorScheme: 'light' | 'dark' }) {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const pathname = usePathname();
+  const { width: windowWidth } = useWindowDimensions();
   const theme = Colors[colorScheme];
-  const isCompact = width < 980;
-  const canGoBack = typeof router.canGoBack === 'function' ? router.canGoBack() : true;
-  const apkUrl = 'https://drive.google.com/file/d/15-4jvSWeHcLyUGvXSZz66XEDvj_Gekxf/view?usp=sharing';
+  const isCompact = windowWidth < 980;
+  const showBackButton = pathname !== '/splash' && pathname !== '/';
 
   return (
-    <ThemedView style={styles.webRoot}>
+    <ThemedView style={[styles.webRoot, { backgroundColor: colorScheme === 'dark' ? '#050810' : '#0D1320' }]}>
       <View style={[styles.webBody, isCompact ? styles.webBodyCompact : null]}>
-        <View style={[styles.webNotice, isCompact ? styles.webNoticeCompact : null]}>
-          <View style={[styles.webNoticeCard, { borderColor: theme.border, backgroundColor: theme.surface }]}>
-            <ThemedText type="subtitle">Web Preview Notice</ThemedText>
-            <ThemedText style={[styles.webNoticeText, { color: theme.mutedText }]}>
-              This web simulation may differ from the actual mobile experience. You can download the app for a better
-              experience.
-            </ThemedText>
-            <Pressable
-              onPress={() => Linking.openURL(apkUrl)}
-              style={({ pressed }) => [
-                styles.webNoticeButton,
-                {
-                  borderColor: theme.primary,
-                  backgroundColor: theme.primary,
-                  opacity: pressed ? 0.86 : 1,
-                },
-              ]}>
-              <ThemedText style={{ color: '#FFFFFF', fontFamily: FontFamilies.semiBold }}>Download APK</ThemedText>
-            </Pressable>
-          </View>
-        </View>
         <View style={styles.phoneCenter}>
           <View style={styles.phoneWrap}>
-            {canGoBack ? (
+            {showBackButton ? (
               <Pressable
                 onPress={() => router.back()}
                 style={({ pressed }) => [
                   styles.phoneBackButtonOuter,
+                  isCompact ? styles.phoneBackButtonCompact : null,
                   {
                     borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(10, 16, 28, 0.12)',
                     backgroundColor: colorScheme === 'dark' ? 'rgba(12, 18, 32, 0.62)' : 'rgba(255, 255, 255, 0.85)',
@@ -170,12 +155,16 @@ function WebShell({ children, colorScheme }: { children: ReactNode; colorScheme:
               style={[
                 styles.phoneFrame,
                 {
+                  width: PHONE_FRAME_W,
+                  height: PHONE_FRAME_H,
                   borderColor: colorScheme === 'dark' ? 'rgba(255, 255, 255, 0.14)' : 'rgba(10, 16, 28, 0.2)',
                   backgroundColor: colorScheme === 'dark' ? '#040710' : '#0A0F1B',
                 },
               ]}>
               <View style={[styles.phoneScreen, { borderColor: theme.border }]}>
-                <View style={styles.phoneViewport}>{children}</View>
+                <WebViewportContext.Provider value={MOBILE_VIEWPORT}>
+                  <View style={styles.phoneViewport}>{children}</View>
+                </WebViewportContext.Provider>
               </View>
             </View>
           </View>
@@ -217,6 +206,8 @@ function WebShell({ children, colorScheme }: { children: ReactNode; colorScheme:
 const styles = StyleSheet.create({
   webRoot: {
     flex: 1,
+    minHeight: '100vh' as unknown as number,
+    overflow: 'visible',
   },
   webBody: {
     flex: 1,
@@ -226,40 +217,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingVertical: 24,
     gap: 28,
+    overflow: 'visible',
+    minHeight: '100vh' as unknown as number,
   },
   webBodyCompact: {
     flexDirection: 'column',
     paddingHorizontal: 20,
     paddingVertical: 18,
-  },
-  webNotice: {
-    width: 260,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-  },
-  webNoticeCompact: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  webNoticeCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
-    width: '100%',
-  },
-  webNoticeText: {
-    marginTop: 8,
-    fontSize: 13,
-    fontFamily: FontFamilies.medium,
-    lineHeight: 18,
-  },
-  webNoticeButton: {
-    marginTop: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   phoneCenter: {
     alignItems: 'center',
@@ -267,52 +231,55 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minWidth: 0,
     minHeight: 0,
+    overflow: 'visible',
   },
   phoneWrap: {
-    width: 380,
-    height: 780,
-    position: 'relative',
+    width: PHONE_FRAME_W,
+    height: PHONE_FRAME_H,
+    position: 'relative' as const,
+    overflow: 'visible',
+  },
+  phoneBackButtonCompact: {
+    left: 8,
+    top: 24,
   },
   phoneFrame: {
-    width: 380,
-    height: 780,
-    borderRadius: 52,
+    borderRadius: 48,
     borderWidth: 1,
-    padding: 12,
+    padding: PHONE_BEZEL,
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 10,
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 12,
     minWidth: 0,
     minHeight: 0,
   },
   phoneBackButtonOuter: {
-    position: 'absolute',
-    left: -60,
-    top: 20,
-    width: 38,
-    height: 38,
+    position: 'absolute' as const,
+    left: -56,
+    top: 24,
+    width: 40,
+    height: 40,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 3,
+    zIndex: 10,
+    elevation: 10,
   },
   phoneScreen: {
-    flex: 1,
-    borderRadius: 40,
+    width: MOBILE_VIEWPORT.width,
+    height: MOBILE_VIEWPORT.height,
+    borderRadius: 36,
     borderWidth: 1,
     overflow: 'hidden',
     backgroundColor: 'transparent',
-    minWidth: 0,
-    minHeight: 0,
   },
   phoneViewport: {
-    flex: 1,
-    paddingTop: 16,
-    minWidth: 0,
-    minHeight: 0,
+    width: MOBILE_VIEWPORT.width,
+    height: MOBILE_VIEWPORT.height,
+    overflow: 'hidden',
   },
   screenList: {
     width: 300,

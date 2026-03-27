@@ -1,122 +1,103 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import LottieView from 'lottie-react-native';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Colors, FontFamilies } from '@/constants/theme';
-import { useAuth } from '@/hooks/use-auth';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { SurfaceCard } from '@/components/ui/surface-card';
+import { DibsLogo } from '@/components/dibs-logo';
+import { FontFamilies } from '@/constants/theme';
+import { useDemoSession } from '@/hooks/demo-session';
+
+// Splash uses fixed dark theme to match appUI.pen Splash Screen (node pTXsO)
+const SPLASH_BG = '#070A12';
+
+// Splash background overlay (fingerprint-style texture)
+const SPLASH_OVERLAY = require('@/assets/images/splash_overlay.png');
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { session, isLoading } = useAuth();
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
+  const { isSignedIn } = useDemoSession();
+  const { width, height } = useViewportDimensions();
 
   useEffect(() => {
     if (isLoading) return;
     const timer = setTimeout(() => {
-      router.replace(session ? '/(tabs)' : '/(auth)/login');
-    }, 900);
+      router.replace(isSignedIn ? '/(tabs)' : '/(auth)/login');
+    }, 1200);
     return () => clearTimeout(timer);
   }, [session, isLoading, router]);
 
   return (
-    <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.safeArea}>
-        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-          <LinearGradient
-            colors={
-              colorScheme === 'dark'
-                ? ['rgba(34, 198, 217, 0.18)', 'rgba(7, 10, 18, 0)']
-                : ['rgba(34, 198, 217, 0.16)', 'rgba(246, 247, 251, 0)']
-            }
-            start={{ x: 0.2, y: 0 }}
-            end={{ x: 0.8, y: 1 }}
-            style={styles.topGlow}
-          />
-        </View>
-
-        <SurfaceCard variant="glass" style={styles.splashCard}>
-          <View style={styles.logoStack}>
-            <LottieView
-              source={require('../assets/lottie/pulse_ring.json')}
-              autoPlay
-              loop
-              style={styles.pulseLottie}
-            />
-            <View style={[styles.logoWrap, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <MaterialIcons name="shield" size={38} color={theme.primary} />
-            </View>
+    <View style={styles.screen}>
+      <View style={styles.background}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: SPLASH_BG }]} />
+        <Image
+          source={SPLASH_OVERLAY}
+          style={[styles.decoration, { width, height }]}
+          resizeMode="cover"
+          accessibilityLabel=""
+        />
+      </View>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.content}>
+          <View style={styles.logoWrap}>
+            <DibsLogo width={280} height={108} />
           </View>
-          <ThemedText type="title" style={styles.title}>
-            DIBS
-          </ThemedText>
-          <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.semiBold, textAlign: 'center' }}>
-            DIGITAL IMAGE BIOMETRIC SYSTEMS
-          </ThemedText>
-        </SurfaceCard>
+          <Text style={styles.tagline}>digital image biometric systems</Text>
+        </View>
+        <View style={styles.indicator}>
+          <View style={styles.indicatorBar} />
+        </View>
       </SafeAreaView>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: SPLASH_BG,
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  decoration: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 1,
   },
   safeArea: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+  },
+  content: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  topGlow: {
-    position: 'absolute',
-    left: -40,
-    right: -40,
-    top: -70,
-    height: 320,
-  },
-  splashCard: {
-    width: '100%',
-    maxWidth: 420,
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  logoStack: {
-    width: 110,
-    height: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  pulseLottie: {
-    position: 'absolute',
-    width: 110,
-    height: 110,
+    gap: 48,
   },
   logoWrap: {
-    width: 76,
-    height: 76,
-    borderRadius: 22,
-    borderWidth: 1,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontFamily: FontFamilies.medium,
+    fontSize: 13,
+    letterSpacing: 2,
+    lineHeight: 30,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    textTransform: 'lowercase',
+  },
+  indicator: {
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    paddingBottom: 8,
   },
-  title: {
-    marginBottom: 6,
+  indicatorBar: {
+    width: 135,
+    height: 5,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
 });
