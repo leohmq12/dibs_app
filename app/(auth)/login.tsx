@@ -10,12 +10,12 @@ import { DibsLogo } from '@/components/dibs-logo';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
-import { useDemoSession } from '@/hooks/demo-session';
+import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn } = useDemoSession();
+  const { signIn } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
 

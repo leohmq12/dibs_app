@@ -20,11 +20,12 @@ export default function SplashScreen() {
   const { width, height } = useViewportDimensions();
 
   useEffect(() => {
+    if (isLoading) return;
     const timer = setTimeout(() => {
       router.replace(isSignedIn ? '/(tabs)' : '/(auth)/login');
     }, 1200);
     return () => clearTimeout(timer);
-  }, [isSignedIn, router]);
+  }, [session, isLoading, router]);
 
   return (
     <View style={styles.screen}>

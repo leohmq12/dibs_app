@@ -61,9 +61,9 @@ export default function RootLayout() {
 
   return (
     <ThemeModeProvider>
-      <DemoSessionProvider>
+      <AuthProvider>
         <RootNavigator />
-      </DemoSessionProvider>
+      </AuthProvider>
     </ThemeModeProvider>
   );
 }
