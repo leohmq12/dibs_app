@@ -1,7 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,7 @@ import { Colors, FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 type VerificationState = 'scanning' | 'success' | 'failure';
 
@@ -24,6 +25,47 @@ export default function IdentityVerificationModal() {
   const enableLayoutAnimations = process.env.EXPO_OS !== 'web';
 
   const [state, setState] = useState<VerificationState>('scanning');
+
+  const handleVerify = async () => {
+    setState('scanning');
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      
+      if (!hasHardware || !isEnrolled) {
+        setState('failure');
+        resetVaultVerification();
+        alert('Biometric authentication is not set up on this device.');
+        return;
+      }
+      
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Unlock Vault to view your hidden items',
+        fallbackLabel: 'Use Passcode',
+      });
+      
+      if (result.success) {
+        setState('success');
+        verifyVault();
+        setTimeout(() => router.back(), 500);
+      } else {
+        setState('failure');
+        resetVaultVerification();
+      }
+    } catch (e) {
+      console.warn(e);
+      setState('failure');
+      resetVaultVerification();
+    }
+  };
+
+  useEffect(() => {
+    // Automatically trigger biometrics after a short delay for animation
+    const timer = setTimeout(() => {
+      handleVerify();
+    }, 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   const targetLabel = useMemo(() => (mediaId ? `Media ID: ${mediaId}` : 'Media ID: —'), [mediaId]);
 
@@ -118,11 +160,7 @@ export default function IdentityVerificationModal() {
 
           <View style={styles.actions}>
             <Pressable
-              onPress={() => {
-                setState('success');
-                verifyVault();
-                setTimeout(() => router.back(), 250);
-              }}
+              onPress={handleVerify}
               style={({ pressed }) => [
                 styles.primaryButton,
                 {
@@ -131,24 +169,7 @@ export default function IdentityVerificationModal() {
                 },
               ]}>
               <ThemedText style={{ color: '#FFFFFF', fontFamily: FontFamilies.semiBold }}>
-                Simulate Success
-              </ThemedText>
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                setState('failure');
-                resetVaultVerification();
-              }}
-              style={({ pressed }) => [
-                styles.outlineButton,
-                {
-                  borderColor: theme.danger,
-                  opacity: pressed ? 0.86 : 1,
-                },
-              ]}>
-              <ThemedText style={{ color: theme.danger, fontFamily: FontFamilies.semiBold }}>
-                Simulate Failure
+                Verify Identity
               </ThemedText>
             </Pressable>
 
@@ -162,7 +183,7 @@ export default function IdentityVerificationModal() {
                 },
               ]}>
               <ThemedText style={{ color: theme.mutedText, fontFamily: FontFamilies.semiBold }}>
-                Close
+                Cancel
               </ThemedText>
             </Pressable>
           </View>
