@@ -2,7 +2,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +12,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase';
 
 type Filter = 'all' | 'photos' | 'videos';
 
@@ -29,19 +31,45 @@ export default function VaultScreen() {
   const { isVaultVerified } = useDemoSession();
   const [filter, setFilter] = useState<Filter>('all');
 
+  const { user } = useAuth();
+
   const padding = 16;
   const gap = 8;
   const cols = 2;
   const tileWidth = (width - padding * 2 - gap) / cols;
 
-  const items = useMemo(() => {
-    const ids = [101, 108, 115, 122, 129, 136, 143, 150];
-    return ids.map((id, i) => ({
-      id: String(i + 1),
-      uri: `https://picsum.photos/seed/${id}/400/400`,
-      type: (i % 2 === 0 ? 'image' : 'video') as 'image' | 'video',
-    }));
-  }, []);
+  const [items, setItems] = useState<{ id: string; uri: string; type: 'image' | 'video' }[]>([]);
+
+  useEffect(() => {
+    async function loadVault() {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase.storage.from('vault').list(user.id);
+      if (error || !data) return;
+
+      const fileNames = data.filter((f) => f.name !== '.emptyFolderPlaceholder').map((f) => `${user.id}/${f.name}`);
+      if (fileNames.length === 0) {
+        setItems([]);
+        return;
+      }
+
+      const { data: signedUrls } = await supabase.storage.from('vault').createSignedUrls(fileNames, 60 * 60);
+
+      if (signedUrls) {
+        const out = signedUrls.map((s, i) => {
+          const fileName = fileNames[i];
+          const isVid = /\.(mp4|mov|avi)$/i.test(fileName);
+          return {
+            id: fileName,
+            uri: s.signedUrl || '',
+            type: (isVid ? 'video' : 'image') as 'image' | 'video',
+          };
+        });
+        setItems(out);
+      }
+    }
+    loadVault();
+  }, [user]);
 
   const filtered = useMemo(() => {
     if (filter === 'all') return items;

@@ -13,6 +13,7 @@ import { Colors, FontFamilies } from '@/constants/theme';
 import { MOBILE_VIEWPORT, WebViewportContext } from '@/hooks/use-viewport-dimensions';
 import { ThemeModeProvider, useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/hooks/use-auth';
+import { DemoSessionProvider } from '@/hooks/demo-session';
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -61,9 +62,11 @@ export default function RootLayout() {
 
   return (
     <ThemeModeProvider>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
+      <DemoSessionProvider>
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
+      </DemoSessionProvider>
     </ThemeModeProvider>
   );
 }

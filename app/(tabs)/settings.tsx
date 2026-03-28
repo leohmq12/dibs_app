@@ -12,12 +12,12 @@ import { Colors, FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme, useSetColorScheme } from '@/hooks/use-color-scheme';
 
-export default function SettingsScreen() {
+const SettingsScreen = () => {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const setColorScheme = useSetColorScheme();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
@@ -28,6 +28,10 @@ export default function SettingsScreen() {
     setDarkMode(value);
     setColorScheme(value ? 'dark' : 'light');
   };
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const userEmail = user?.email || 'No email provided';
+  const userId = user?.id ? `ID: ${user.id.slice(0, 8).toUpperCase()}` : 'ID: UNKNOWN';
 
   const cardBg = theme.cardTint;
   const cardBorder = theme.cardTintBorder;
@@ -60,9 +64,9 @@ export default function SettingsScreen() {
                   style={styles.avatar}
                 />
                 <View style={styles.profileText}>
-                  <ThemedText style={[styles.profileName, { color: theme.text }]}>Roger Smith</ThemedText>
-                  <ThemedText style={[styles.profileEmail, { color: theme.mutedText }]}>roger.smith@email.com</ThemedText>
-                  <ThemedText style={[styles.profileId, { color: theme.accent }]}>ID: 8829-DIBS-SEC</ThemedText>
+                  <ThemedText style={[styles.profileName, { color: theme.text }]}>{userName}</ThemedText>
+                  <ThemedText style={[styles.profileEmail, { color: theme.mutedText }]}>{userEmail}</ThemedText>
+                  <ThemedText style={[styles.profileId, { color: theme.accent }]}>{userId}</ThemedText>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.6 }} />
               </Pressable>
@@ -172,7 +176,9 @@ export default function SettingsScreen() {
       </SafeAreaView>
     </ThemedView>
   );
-}
+};
+
+export default SettingsScreen;
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },

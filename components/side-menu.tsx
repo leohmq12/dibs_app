@@ -25,6 +25,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useOverlayPortal } from '@/hooks/overlay-portal-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/hooks/use-auth';
 
 const MENU_WIDTH = 288;
 const ANIM_DURATION = 300;
@@ -50,6 +51,9 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
   const portalRef = useOverlayPortal();
+  const { user } = useAuth();
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
   const panelX = useRef(new RNAnimated.Value(-MENU_WIDTH)).current;
   const backdropOpacity = useRef(new RNAnimated.Value(0)).current;
@@ -204,7 +208,7 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
             />
           </View>
           <ThemedText style={[styles.userName, { color: theme.text }]} numberOfLines={1}>
-            Roger Smith
+            {userName}
           </ThemedText>
           <Pressable onPress={closeMenu} style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.7 }]} hitSlop={12}>
             <MaterialIcons name="chevron-left" size={24} color={theme.text} style={{ opacity: 0.6 }} />

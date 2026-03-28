@@ -39,6 +39,12 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Dibs to secure your vault with Face ID."
+        }
       ]
     ],
     "experiments": {
