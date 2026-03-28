@@ -1,5 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -30,16 +31,35 @@ export default function LogsScreen() {
   const [search, setSearch] = useState('');
   const [logsList, setLogsList] = useState<LogItem[]>([]);
 
+  useFocusEffect(
+    useCallback(() => {
+      supabase
+        .from('logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setLogsList(data as LogItem[]);
+          }
+        });
+    }, [])
+  );
+
   useEffect(() => {
-    supabase
-      .from('logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (!error && data) {
-          setLogsList(data as LogItem[]);
+    const channel = supabase
+      .channel('realtime_logs')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'logs' },
+        (payload) => {
+          setLogsList((prev) => [payload.new as LogItem, ...prev]);
         }
-      });
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const exportLogs = () => {

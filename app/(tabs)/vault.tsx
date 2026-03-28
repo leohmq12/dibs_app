@@ -1,9 +1,12 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
+import { decode } from 'base64-arraybuffer';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,8 +31,10 @@ export default function VaultScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const { width } = useViewportDimensions();
+  const insets = useSafeAreaInsets();
   const { isVaultVerified } = useDemoSession();
   const [filter, setFilter] = useState<Filter>('all');
+  const [isUploading, setIsUploading] = useState(false);
 
   const { user } = useAuth();
 
@@ -40,36 +45,41 @@ export default function VaultScreen() {
 
   const [items, setItems] = useState<{ id: string; uri: string; type: 'image' | 'video' }[]>([]);
 
-  useEffect(() => {
-    async function loadVault() {
-      if (!user?.id) return;
-      
-      const { data, error } = await supabase.storage.from('vault').list(user.id);
-      if (error || !data) return;
+  const loadVault = useCallback(async () => {
+    if (!user?.id) return;
+    
+    const { data, error } = await supabase.storage.from('vault').list(user.id);
+    if (error || !data) return;
 
-      const fileNames = data.filter((f) => f.name !== '.emptyFolderPlaceholder').map((f) => `${user.id}/${f.name}`);
-      if (fileNames.length === 0) {
-        setItems([]);
-        return;
-      }
-
-      const { data: signedUrls } = await supabase.storage.from('vault').createSignedUrls(fileNames, 60 * 60);
-
-      if (signedUrls) {
-        const out = signedUrls.map((s, i) => {
-          const fileName = fileNames[i];
-          const isVid = /\.(mp4|mov|avi)$/i.test(fileName);
-          return {
-            id: fileName,
-            uri: s.signedUrl || '',
-            type: (isVid ? 'video' : 'image') as 'image' | 'video',
-          };
-        });
-        setItems(out);
-      }
+    const fileNames = data.filter((f) => f.name !== '.emptyFolderPlaceholder').map((f) => `${user.id}/${f.name}`);
+    if (fileNames.length === 0) {
+      setItems([]);
+      return;
     }
-    loadVault();
+
+    const { data: signedUrls } = await supabase.storage.from('vault').createSignedUrls(fileNames, 60 * 60);
+
+    if (signedUrls) {
+      const out = signedUrls.map((s, i) => {
+        const fileName = fileNames[i];
+        const isVid = /\.(mp4|mov|avi)$/i.test(fileName);
+        return {
+          id: fileName,
+          uri: s.signedUrl || '',
+          type: (isVid ? 'video' : 'image') as 'image' | 'video',
+        };
+      });
+      setItems(out);
+    }
   }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadVault();
+    }, [loadVault])
+  );
+
+
 
   const filtered = useMemo(() => {
     if (filter === 'all') return items;
@@ -158,6 +168,7 @@ export default function VaultScreen() {
           columnWrapperStyle={styles.gridRow}
           renderItem={({ item }) => (
             <Pressable
+              onPress={() => router.push({ pathname: '/viewer', params: { url: item.uri, type: item.type } })}
               style={({ pressed }) => [styles.tile, { width: tileWidth - gap / 2, opacity: pressed ? 0.9 : 1 }]}>
               <Image source={{ uri: item.uri }} style={styles.tileImage} contentFit="cover" />
               {item.type === 'video' && (

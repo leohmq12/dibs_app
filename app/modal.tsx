@@ -53,16 +53,18 @@ export default function IdentityVerificationModal() {
         setAuthStatus('success');
         verifyVault();
         await supabase.from('logs').insert({
+          user_id: user?.id,
           name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
           details: 'Biometric Verified',
           device: Platform.OS,
           status: 'verified',
           type: 'success',
         });
-        setTimeout(() => router.back(), 500);
+        setTimeout(() => router.replace('/(tabs)/vault'), 500);
       } else {
         setAuthStatus('failed');
         await supabase.from('logs').insert({
+          user_id: user?.id,
           name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
           details: 'Verification Failed',
           device: Platform.OS,
@@ -84,13 +86,14 @@ export default function IdentityVerificationModal() {
     setAuthStatus('success');
     verifyVault();
     await supabase.from('logs').insert({
+      user_id: user?.id,
       name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
       details: 'PIN Verified Fallback',
       device: Platform.OS,
       status: 'verified',
       type: 'success',
     });
-    setTimeout(() => router.back(), 400);
+    setTimeout(() => router.replace('/(tabs)/vault'), 400);
   };
 
   const cardBg = colorScheme === 'dark' ? '#11141C' : theme.surface;

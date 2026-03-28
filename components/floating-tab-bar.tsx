@@ -1,13 +1,20 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
+import { useState } from 'react';
+import { useDemoSession } from '@/hooks/demo-session';
 
 const TABS = [
   { name: 'index', label: 'Home', icon: 'home' as const },
@@ -39,6 +46,64 @@ export function FloatingTabBar({ state, navigation }: any) {
 
   const tabColor = theme.tabIconSelected ?? theme.accent;
   const fabFill = theme.primary;
+  const { user } = useAuth();
+  const { isVaultVerified, resetVaultVerification } = useDemoSession();
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleUpload = async () => {
+    if (!user?.id) return;
+    if (!isVaultVerified) {
+      router.push('/modal');
+      return;
+    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsEditing: false,
+        quality: 1,
+        base64: true, // returns base64 for images
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        setIsUploading(true);
+        const asset = result.assets[0];
+        
+        let base64Str = asset.base64;
+        // Videos don't return base64 from picker automatically in Expo, fetch it via FS:
+        if (!base64Str) {
+          base64Str = await FileSystem.readAsStringAsync(asset.uri, {
+            encoding: 'base64',
+          });
+        }
+        
+        if (!base64Str) throw new Error('Could not parse media bytes');
+
+        let fileExt = asset.uri.split('.').pop() || 'jpg';
+        if (asset.type === 'video' && !fileExt.match(/(mp4|mov|avi)/i)) fileExt = 'mp4';
+        
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        const contentType = asset.type === 'video' ? 'video/mp4' : 'image/jpeg';
+
+        await supabase.storage.from('vault').upload(filePath, decode(base64Str), { contentType });
+
+        await supabase.from('logs').insert({
+          user_id: user.id,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          details: `Uploaded media file: ${fileExt.toUpperCase()}`,
+          device: Platform.OS,
+          status: 'verified',
+          type: 'success',
+        });
+        
+        // Navigation forces a vault reload
+        router.push('/vault');
+      }
+    } catch (err) {
+      console.error('Upload Error:', err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -62,6 +127,10 @@ export function FloatingTabBar({ state, navigation }: any) {
             const left = centerX - btnWidth / 2;
 
             const onPress = () => {
+              if (tab.name !== 'vault') {
+                resetVaultVerification();
+              }
+
               const event = navigation.emit({
                 type: 'tabPress',
                 target: route.key,
@@ -103,12 +172,17 @@ export function FloatingTabBar({ state, navigation }: any) {
           })}
           <View style={[styles.fabSlot, { marginLeft: -FAB_SIZE / 2 }]}>
             <Pressable
-              onPress={() => router.push('/modal')}
+              onPress={handleUpload}
+              disabled={isUploading}
               style={({ pressed }) => [
                 styles.fab,
-                { backgroundColor: fabFill, opacity: pressed ? 0.9 : 1 },
+                { backgroundColor: fabFill, opacity: pressed || isUploading ? 0.8 : 1 },
               ]}>
-              <ThemedText style={styles.fabIcon}>+</ThemedText>
+              {isUploading ? (
+                <MaterialIcons name="hourglass-empty" size={24} color="#FFF" />
+              ) : (
+                <ThemedText style={styles.fabIcon}>+</ThemedText>
+              )}
             </Pressable>
           </View>
         </View>

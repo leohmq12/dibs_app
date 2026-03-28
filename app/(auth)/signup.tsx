@@ -44,6 +44,7 @@ export default function SignupScreen() {
     
     if (!error) {
       await supabase.from('logs').insert({
+        user_id: data?.user?.id,
         name: fullName || email.split('@')[0],
         details: 'Successful Account Creation',
         device: Platform.OS,
@@ -54,6 +55,7 @@ export default function SignupScreen() {
       router.replace('/(auth)/face-enroll');
     } else {
       await supabase.from('logs').insert({
+        user_id: null,
         name: fullName || email.split('@')[0] || 'Unknown User',
         details: `Failed Signup: ${error.message}`,
         device: Platform.OS,

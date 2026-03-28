@@ -94,6 +94,14 @@ function RootNavigator() {
                 animation: 'slide_from_bottom',
               }}
             />
+            <Stack.Screen
+              name="viewer"
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+                animation: 'fade',
+              }}
+            />
           </Stack>
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         </WebShell>
@@ -112,6 +120,14 @@ function RootNavigator() {
                 headerShown: false,
                 title: 'Identity Verification',
                 animation: 'slide_from_bottom',
+              }}
+            />
+            <Stack.Screen
+              name="viewer"
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+                animation: 'fade',
               }}
             />
           </Stack>

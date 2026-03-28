@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from 'react';
+import { AppState } from 'react-native';
 
 type DemoSessionValue = {
   isSignedIn: boolean;
@@ -14,6 +15,17 @@ const DemoSessionContext = createContext<DemoSessionValue | null>(null);
 export function DemoSessionProvider({ children }: { children: ReactNode }) {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isVaultVerified, setIsVaultVerified] = useState(false);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'background' || nextAppState === 'inactive') {
+        setIsVaultVerified(false);
+      }
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   const value = useMemo(
     () => ({
