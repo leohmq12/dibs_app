@@ -45,6 +45,14 @@
         {
           "faceIDPermission": "Allow Dibs to secure your vault with Face ID."
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow DIBS to save media to your local album.",
+          "savePhotosPermission": "Allow DIBS to download secure media into your phone.",
+          "isAccessMediaLocationEnabled": true
+        }
       ]
     ],
     "experiments": {

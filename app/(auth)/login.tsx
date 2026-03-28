@@ -80,6 +80,7 @@ export default function LoginScreen() {
                 
                 if (!error) {
                   await supabase.from('logs').insert({
+                    user_id: data?.user?.id,
                     name: data?.user?.user_metadata?.full_name || email.split('@')[0],
                     details: 'Successful Login',
                     device: Platform.OS,
@@ -91,6 +92,7 @@ export default function LoginScreen() {
                   router.replace('/(tabs)');
                 } else {
                   await supabase.from('logs').insert({
+                    user_id: null,
                     name: email.split('@')[0] || 'Unknown User',
                     details: `Failed Login: ${error.message}`,
                     device: Platform.OS,

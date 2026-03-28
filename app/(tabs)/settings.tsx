@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme, useSetColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/lib/supabase';
 
 const SettingsScreen = () => {
   const router = useRouter();
@@ -161,7 +162,17 @@ const SettingsScreen = () => {
 
             {/* Log Out */}
             <Pressable
-              onPress={() => {
+              onPress={async () => {
+                if (user) {
+                  await supabase.from('logs').insert({
+                    user_id: user.id,
+                    name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+                    details: 'User forcibly logged out',
+                    device: Platform.OS,
+                    status: 'verified',
+                    type: 'success',
+                  });
+                }
                 signOut();
                 router.replace('/(auth)/login');
               }}

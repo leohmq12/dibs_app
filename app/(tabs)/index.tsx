@@ -24,6 +24,17 @@ type ActivityItem = {
   type: 'success' | 'danger' | 'blue';
 };
 
+function formatRelativeTime(dateString?: string) {
+  if (!dateString) return 'Just now';
+  const diffSec = Math.floor((new Date().getTime() - new Date(dateString).getTime()) / 1000);
+  if (diffSec < 60) return `${Math.max(1, diffSec)}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}h ago`;
+  return `${Math.floor(diffHour / 24)}d ago`;
+}
+
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
@@ -45,7 +56,7 @@ export default function HomeScreen() {
             id: d.id,
             title: d.name || 'System Log',
             subtitle: d.details || 'No details',
-            time: 'Recent',
+            time: formatRelativeTime(d.created_at),
             type: d.type || 'success',
           }));
           setActivities(mapped);
@@ -65,6 +76,29 @@ export default function HomeScreen() {
         }
       });
     }
+
+    const channel = supabase
+      .channel('home_realtime_logs')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'logs' },
+        (payload) => {
+          const d = payload.new as any;
+          const newItem: ActivityItem = {
+            id: d.id,
+            title: d.name || 'System Log',
+            subtitle: d.details || 'No details',
+            time: formatRelativeTime(d.created_at),
+            type: d.type || 'success',
+          };
+          setActivities((prev) => [newItem, ...prev].slice(0, 3));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';

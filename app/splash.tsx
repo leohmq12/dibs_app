@@ -45,9 +45,6 @@ export default function SplashScreen() {
           </View>
           <Text style={styles.tagline}>digital image biometric systems</Text>
         </View>
-        <View style={styles.indicator}>
-          <View style={styles.indicatorBar} />
-        </View>
       </SafeAreaView>
     </View>
   );
@@ -87,17 +84,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
     textTransform: 'lowercase',
-  },
-  indicator: {
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 8,
-  },
-  indicatorBar: {
-    width: 135,
-    height: 5,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
 });
