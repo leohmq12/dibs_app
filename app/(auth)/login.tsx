@@ -73,9 +73,13 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => {
-                signIn();
-                router.replace('/(tabs)');
+              onPress={async () => {
+                const { error } = await signIn(email, password);
+                if (!error) {
+                  router.replace('/(tabs)');
+                } else {
+                  console.error(error.message);
+                }
               }}
               style={({ pressed }) => [
                 styles.primaryButton,

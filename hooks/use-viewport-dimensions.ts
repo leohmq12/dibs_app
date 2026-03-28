@@ -3,8 +3,7 @@
  * This hook returns context dimensions when provided (web), else useWindowDimensions().
  */
 import { createContext, useContext } from 'react';
-import { useWindowDimensions } from 'react-native';
-import { Platform } from 'react-native';
+import { useWindowDimensions, Platform } from 'react-native';
 
 export const MOBILE_VIEWPORT = { width: 375, height: 812 } as const;
 

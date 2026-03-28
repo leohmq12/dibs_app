@@ -24,7 +24,7 @@ export default function IdentityVerificationModal() {
   const { verifyVault } = useDemoSession();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const [verifying, setVerifying] = useState(false);
+  const [, setVerifying] = useState(false);
 
   const handleVerify = () => {
     setVerifying(true);

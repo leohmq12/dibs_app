@@ -17,7 +17,7 @@ export default function SettingsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const setColorScheme = useSetColorScheme();
-  const { signOut } = useDemoSession();
+  const { signOut } = useAuth();
   const insets = useSafeAreaInsets();
 
   const [darkMode, setDarkMode] = useState(colorScheme === 'dark');

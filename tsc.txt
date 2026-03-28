@@ -1,0 +1,45 @@
+﻿app/(tabs)/settings.tsx(20,23): error TS2304: Cannot find name 'useDemoSession'.
+app/splash.tsx(23,9): error TS2304: Cannot find name 'isLoading'.
+app/splash.tsx(28,7): error TS2304: Cannot find name 'session'.
+app/splash.tsx(28,16): error TS2304: Cannot find name 'isLoading'.
+components/floating-tab-bar.tsx(57,46): error TS7006: Parameter 'r' implicitly has an 'any' type.
+components/floating-tab-bar.tsx(58,56): error TS7006: Parameter 'r' implicitly has an 'any' type.
+components/parallax-scroll-view.tsx(50,7): error TS2322: Type '{ backgroundColor: string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]; flex: number; }' is not assignable to type 'StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>'.
+  Types of property 'backgroundColor' are incompatible.
+    Type 'string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]' is not assignable to type 'ColorValue | SharedValueDisableContravariance<string> | SharedValueDisableContravariance<OpaqueColorValue> | { ...; } | undefined'.
+      Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'ColorValue | SharedValueDisableContravariance<string> | SharedValueDisableContravariance<OpaqueColorValue> | { ...; } | undefined'.
+        Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type '{ toString: (() => string) | SharedValueDisableContravariance<() => string> | {}; valueOf: (() => symbol) | SharedValueDisableContravariance<() => symbol> | {}; readonly description: MaybeSharedValue<...> | undefined; [Symbol.toPrimitive]: ((hint: string) => symbol) | ... 1 more ... | {}; readonly [Symbol.toStringTa...'.
+components/themed-text.tsx(23,6): error TS2769: No overload matches this call.
+  Overload 2 of 2, '(props: TextProps, context: any): Text', gave the following error.
+    Type '{ color: string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]; fontFamily: "Poppins_400Regular"; }' is not assignable to type 'Falsy | TextStyle | RegisteredStyle<TextStyle> | RecursiveArray<Falsy | TextStyle | RegisteredStyle<TextStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+      Types of property 'color' are incompatible.
+        Type 'string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]' is not assignable to type 'ColorValue | undefined'.
+          Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'ColorValue | undefined'.
+            Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'OpaqueColorValue'.
+              Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'symbol'.
+  Overload 2 of 2, '(props: TextProps, context: any): Text', gave the following error.
+    Type '({ fontSize: number; fontFamily: "Poppins_600SemiBold"; } | { color: string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]; })[] | undefined' is not assignable to type 'Falsy | TextStyle | RegisteredStyle<TextStyle> | RecursiveArray<Falsy | TextStyle | RegisteredStyle<TextStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+      Type '({ fontSize: number; fontFamily: "Poppins_600SemiBold"; } | { color: string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]; })[]' is not assignable to type 'Falsy | TextStyle | RegisteredStyle<TextStyle> | RecursiveArray<Falsy | TextStyle | RegisteredStyle<TextStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+        Type '({ fontSize: number; fontFamily: "Poppins_600SemiBold"; } | { color: string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]; })[]' is not assignable to type 'RecursiveArray<Falsy | TextStyle | RegisteredStyle<TextStyle>>'.
+          The types returned by 'pop()' are incompatible between these types.
+            Type '{ color: string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]; }' is not assignable to type 'Falsy | TextStyle | RegisteredStyle<TextStyle> | RecursiveArray<Falsy | TextStyle | RegisteredStyle<TextStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+              Types of property 'color' are incompatible.
+                Type 'string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]' is not assignable to type 'ColorValue | undefined'.
+                  Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'ColorValue | undefined'.
+                    Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'OpaqueColorValue'.
+                      Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'symbol'.
+components/themed-view.tsx(13,24): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ViewProps): View', gave the following error.
+    Type '{ backgroundColor: string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]; }' is not assignable to type 'Falsy | ViewStyle | RegisteredStyle<ViewStyle> | RecursiveArray<Falsy | ViewStyle | RegisteredStyle<ViewStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+      Types of property 'backgroundColor' are incompatible.
+        Type 'string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]' is not assignable to type 'ColorValue | undefined'.
+          Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'ColorValue | undefined'.
+            Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'OpaqueColorValue'.
+              Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'symbol'.
+  Overload 2 of 2, '(props: ViewProps, context: any): View', gave the following error.
+    Type '{ backgroundColor: string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]; }' is not assignable to type 'Falsy | ViewStyle | RegisteredStyle<ViewStyle> | RecursiveArray<Falsy | ViewStyle | RegisteredStyle<ViewStyle>> | readonly (Falsy | ... 1 more ... | RegisteredStyle<...>)[]'.
+      Types of property 'backgroundColor' are incompatible.
+        Type 'string | readonly ["#39C695", "#119E6D"] | readonly ["#EF4444", "#B30808"] | readonly ["#60A5FA", "#2469BE"]' is not assignable to type 'ColorValue | undefined'.
+          Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'ColorValue | undefined'.
+            Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'OpaqueColorValue'.
+              Type 'readonly ["#39C695", "#119E6D"]' is not assignable to type 'symbol'.
