@@ -82,18 +82,35 @@ export default function IdentityVerificationModal() {
   }, [router, verifyVault]);
 
   const handleVerify = async () => {
-    // Fallback if pin/demo verification is used
-    setAuthStatus('success');
-    verifyVault();
-    await supabase.from('logs').insert({
-      user_id: user?.id,
-      name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
-      details: 'PIN Verified Fallback',
-      device: Platform.OS,
-      status: 'verified',
-      type: 'success',
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Enter Device PIN for Access',
+      fallbackLabel: 'Use PIN',
+      cancelLabel: 'Cancel',
     });
-    setTimeout(() => router.replace('/(tabs)/vault'), 400);
+
+    if (result.success) {
+      setAuthStatus('success');
+      verifyVault();
+      await supabase.from('logs').insert({
+        user_id: user?.id,
+        name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+        details: 'Device Passcode / Fallback Verified',
+        device: Platform.OS,
+        status: 'verified',
+        type: 'success',
+      });
+      setTimeout(() => router.replace('/(tabs)/vault'), 400);
+    } else {
+      setAuthStatus('failed');
+      await supabase.from('logs').insert({
+        user_id: user?.id,
+        name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+        details: 'Device Passcode Verification Failed',
+        device: Platform.OS,
+        status: 'blocked',
+        type: 'danger',
+      });
+    }
   };
 
   const cardBg = colorScheme === 'dark' ? '#11141C' : theme.surface;
