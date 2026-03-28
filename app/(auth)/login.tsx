@@ -12,6 +12,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/lib/supabase';
+import { Platform } from 'react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -74,10 +76,27 @@ export default function LoginScreen() {
 
             <Pressable
               onPress={async () => {
-                const { error } = await signIn(email, password);
+                const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+                
                 if (!error) {
+                  await supabase.from('logs').insert({
+                    name: data?.user?.user_metadata?.full_name || email.split('@')[0],
+                    details: 'Successful Login',
+                    device: Platform.OS,
+                    status: 'verified',
+                    type: 'success',
+                  });
+                  // Also call context signIn to trigger state if needed
+                  signIn(email, password); 
                   router.replace('/(tabs)');
                 } else {
+                  await supabase.from('logs').insert({
+                    name: email.split('@')[0] || 'Unknown User',
+                    details: `Failed Login: ${error.message}`,
+                    device: Platform.OS,
+                    status: 'blocked',
+                    type: 'danger',
+                  });
                   console.error(error.message);
                 }
               }}

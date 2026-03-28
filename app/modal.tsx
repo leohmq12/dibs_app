@@ -3,10 +3,11 @@
  * Centered card on dark background, not a bottom sheet.
  */
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +16,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase';
 
 const CARD_WIDTH = 320;
 const FACE_SIZE = 174;
@@ -22,13 +25,71 @@ const FACE_SIZE = 174;
 export default function IdentityVerificationModal() {
   const router = useRouter();
   const { verifyVault } = useDemoSession();
+  const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const [, setVerifying] = useState(false);
+  const [authStatus, setAuthStatus] = useState<'scanning' | 'failed' | 'success'>('scanning');
 
-  const handleVerify = () => {
-    setVerifying(true);
+  useEffect(() => {
+    let isMounted = true;
+    const triggerAuth = async () => {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (!hasHardware || !isEnrolled) {
+        if (isMounted) setAuthStatus('failed');
+        return;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Verify Identity for Vault Access',
+        fallbackLabel: 'Use PIN',
+        cancelLabel: 'Cancel',
+      });
+
+      if (!isMounted) return;
+
+      if (result.success) {
+        setAuthStatus('success');
+        verifyVault();
+        await supabase.from('logs').insert({
+          name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+          details: 'Biometric Verified',
+          device: Platform.OS,
+          status: 'verified',
+          type: 'success',
+        });
+        setTimeout(() => router.back(), 500);
+      } else {
+        setAuthStatus('failed');
+        await supabase.from('logs').insert({
+          name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+          details: 'Verification Failed',
+          device: Platform.OS,
+          status: 'blocked',
+          type: 'danger',
+        });
+      }
+    };
+
+    const timer = setTimeout(triggerAuth, 600);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [router, verifyVault]);
+
+  const handleVerify = async () => {
+    // Fallback if pin/demo verification is used
+    setAuthStatus('success');
     verifyVault();
+    await supabase.from('logs').insert({
+      name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+      details: 'PIN Verified Fallback',
+      device: Platform.OS,
+      status: 'verified',
+      type: 'success',
+    });
     setTimeout(() => router.back(), 400);
   };
 
@@ -69,9 +130,59 @@ export default function IdentityVerificationModal() {
             </View>
 
             {/* Scanning pill — Pencil UymuP */}
-            <View style={[styles.scanningPill, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
-              <MaterialIcons name="videocam" size={14} color={theme.accent} />
-              <ThemedText style={[styles.scanningText, { color: theme.accent }]}>Scanning</ThemedText>
+            <View
+              style={[
+                styles.scanningPill,
+                {
+                  backgroundColor:
+                    authStatus === 'success'
+                      ? 'rgba(57, 198, 149, 0.15)'
+                      : authStatus === 'failed'
+                        ? 'rgba(239, 68, 68, 0.15)'
+                        : theme.cardTint,
+                  borderColor:
+                    authStatus === 'success'
+                      ? theme.success
+                      : authStatus === 'failed'
+                        ? theme.danger
+                        : theme.cardTintBorder,
+                },
+              ]}>
+              <MaterialIcons
+                name={
+                  authStatus === 'success'
+                    ? 'check-circle'
+                    : authStatus === 'failed'
+                      ? 'error-outline'
+                      : 'videocam'
+                }
+                size={14}
+                color={
+                  authStatus === 'success'
+                    ? theme.success
+                    : authStatus === 'failed'
+                      ? theme.danger
+                      : theme.accent
+                }
+              />
+              <ThemedText
+                style={[
+                  styles.scanningText,
+                  {
+                    color:
+                      authStatus === 'success'
+                        ? theme.success
+                        : authStatus === 'failed'
+                          ? theme.danger
+                          : theme.accent,
+                  },
+                ]}>
+                {authStatus === 'success'
+                  ? 'Verified Successfully'
+                  : authStatus === 'failed'
+                    ? 'Verification Failed'
+                    : 'Scanning'}
+              </ThemedText>
             </View>
 
             {/* Red button — Pencil fr50r: 230×46 */}

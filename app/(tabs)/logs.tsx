@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,6 +7,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+import { supabase } from '@/lib/supabase';
 
 type LogItem = {
   id: string;
@@ -17,33 +19,6 @@ type LogItem = {
   type: 'success' | 'danger';
 };
 
-const LOG_ITEMS: LogItem[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    details: 'Biometric Match • ID: 8821',
-    device: 'iPhone 13 Pro',
-    status: 'verified',
-    type: 'success',
-  },
-  {
-    id: '2',
-    name: 'Unknown User',
-    details: 'Face Mismatch • ID: N/A',
-    device: 'Samsung S21',
-    status: 'blocked',
-    type: 'danger',
-  },
-  {
-    id: '3',
-    name: 'Sarah Miller',
-    details: 'Fingerprint • ID: 4102',
-    device: 'MacBook Pro',
-    status: 'verified',
-    type: 'success',
-  },
-];
-
 // Floating download FAB sits above tab bar — Pencil VxSUD (teal 46px) + RrBHK (download icon)
 const DOWNLOAD_FAB_SIZE = 46;
 const TAB_BAR_HEIGHT = 76;
@@ -53,6 +28,19 @@ export default function LogsScreen() {
   const theme = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
+  const [logsList, setLogsList] = useState<LogItem[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from('logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setLogsList(data as LogItem[]);
+        }
+      });
+  }, []);
 
   const exportLogs = () => {
     // TODO: wire to real export (share file, save to storage)
@@ -93,14 +81,14 @@ export default function LogsScreen() {
         <View style={styles.sectionRow}>
           <ThemedText style={[styles.sectionLabel, { color: theme.text }]}>TODAY</ThemedText>
           <View style={[styles.eventPill, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
-            <ThemedText style={[styles.eventPillText, { color: theme.accent }]}>{LOG_ITEMS.length} Events</ThemedText>
+            <ThemedText style={[styles.eventPillText, { color: theme.accent }]}>{logsList.length} Events</ThemedText>
           </View>
         </View>
 
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {LOG_ITEMS.map((item) => (
+          {logsList.map((item) => (
             <View
               key={item.id}
               style={[styles.logCard, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
@@ -133,10 +121,10 @@ export default function LogsScreen() {
                   </ThemedText>
                 </View>
               </View>
-              <ThemedText style={[styles.logDetails, { color: theme.mutedText }]}>{item.details}</ThemedText>
+              <ThemedText style={[styles.logDetails, { color: theme.mutedText }]}>{item.details || 'No details provided'}</ThemedText>
               <View style={[styles.deviceTag, { backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
                 <MaterialIcons name="smartphone" size={14} color={theme.mutedText} />
-                <ThemedText style={[styles.deviceText, { color: theme.mutedText }]}>{item.device}</ThemedText>
+                <ThemedText style={[styles.deviceText, { color: theme.mutedText }]}>{item.device || 'Unknown Device'}</ThemedText>
               </View>
             </View>
           ))}

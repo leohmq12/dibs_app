@@ -11,6 +11,8 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/lib/supabase';
+import { Platform } from 'react-native';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -34,10 +36,30 @@ export default function SignupScreen() {
       console.error("Passwords do not match");
       return;
     }
-    const { error } = await signUp(email, password);
+    const { error, data } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName || undefined } }
+    });
+    
     if (!error) {
+      await supabase.from('logs').insert({
+        name: fullName || email.split('@')[0],
+        details: 'Successful Account Creation',
+        device: Platform.OS,
+        status: 'verified',
+        type: 'success',
+      });
+      signUp(email, password);
       router.replace('/(auth)/face-enroll');
     } else {
+      await supabase.from('logs').insert({
+        name: fullName || email.split('@')[0] || 'Unknown User',
+        details: `Failed Signup: ${error.message}`,
+        device: Platform.OS,
+        status: 'blocked',
+        type: 'danger',
+      });
       console.error(error.message);
     }
   };

@@ -2,7 +2,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,6 +13,9 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+import { useAuth } from '@/hooks/use-auth';
+import { supabase } from '@/lib/supabase';
+
 type ActivityItem = {
   id: string;
   title: string;
@@ -21,17 +24,50 @@ type ActivityItem = {
   type: 'success' | 'danger' | 'blue';
 };
 
-const ACTIVITY: ActivityItem[] = [
-  { id: '1', title: 'Biometric Verified', subtitle: 'Gallery Access', time: '2m ago', type: 'success' },
-  { id: '2', title: 'Screenshot Blocked', subtitle: 'Unauthorized Attempt', time: '1h ago', type: 'danger' },
-  { id: '3', title: 'Vault Encryption Cycle', subtitle: 'Automated Routine', time: '3h ago', type: 'blue' },
-];
-
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const router = useRouter();
+  const { user } = useAuth();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [stats, setStats] = useState({ images: 0, videos: 0 });
+
+  useEffect(() => {
+    supabase
+      .from('logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(3)
+      .then(({ data }) => {
+        if (data) {
+          const mapped = data.map((d: any) => ({
+            id: d.id,
+            title: d.name || 'System Log',
+            subtitle: d.details || 'No details',
+            time: 'Recent',
+            type: d.type || 'success',
+          }));
+          setActivities(mapped);
+        }
+      });
+
+    if (user?.id) {
+      supabase.storage.from('vault').list(user.id).then(({ data }) => {
+        if (data) {
+          let imgs = 0;
+          let vids = 0;
+          data.forEach(file => {
+            if (file.name.match(/\.(mp4|mov|avi)$/i)) vids++;
+            else if (file.name.match(/\.(png|jpg|jpeg|gif|webp)$/i)) imgs++;
+          });
+          setStats({ images: imgs, videos: vids });
+        }
+      });
+    }
+  }, [user]);
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
 
   return (
     <ThemedView style={styles.screen}>
@@ -69,7 +105,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.userInfo}>
               <ThemedText style={[styles.welcomeLabel, { color: theme.mutedText }]}>Welcome back,</ThemedText>
-              <ThemedText style={[styles.userName, { color: theme.text }]}>Roger Smith</ThemedText>
+              <ThemedText style={[styles.userName, { color: theme.text }]}>{userName}</ThemedText>
             </View>
             <View
               style={[
@@ -103,7 +139,7 @@ export default function HomeScreen() {
                 style={styles.statIcon}>
                 <MaterialIcons name="image" size={18} color="#FFF" />
               </LinearGradient>
-              <ThemedText style={[styles.statValue, { color: theme.text }]}>1,240</ThemedText>
+              <ThemedText style={[styles.statValue, { color: theme.text }]}>{stats.images}</ThemedText>
               <ThemedText style={[styles.statLabel, { color: theme.mutedText }]}>protected images</ThemedText>
             </Pressable>
             <Pressable
@@ -122,7 +158,7 @@ export default function HomeScreen() {
                 style={styles.statIcon}>
                 <MaterialIcons name="videocam" size={18} color="#FFF" />
               </LinearGradient>
-              <ThemedText style={[styles.statValue, { color: theme.text }]}>315</ThemedText>
+              <ThemedText style={[styles.statValue, { color: theme.text }]}>{stats.videos}</ThemedText>
               <ThemedText style={[styles.statLabel, { color: theme.mutedText }]}>protected videos</ThemedText>
             </Pressable>
           </View>
@@ -135,7 +171,7 @@ export default function HomeScreen() {
           </View>
 
           <View style={[styles.activityList, { backgroundColor: theme.cardTint, borderWidth: 1, borderColor: theme.cardTintBorder }]}>
-            {ACTIVITY.map((item, index) => (
+            {activities.map((item, index) => (
                 <View
                   key={item.id}
                   style={[
