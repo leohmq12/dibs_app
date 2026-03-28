@@ -1,8 +1,10 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState, useCallback, useEffect } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -18,11 +20,20 @@ type LogItem = {
   device: string;
   status: 'verified' | 'blocked';
   type: 'success' | 'danger';
+  created_at: string;
 };
 
 // Floating download FAB sits above tab bar — Pencil VxSUD (teal 46px) + RrBHK (download icon)
 const DOWNLOAD_FAB_SIZE = 46;
 const TAB_BAR_HEIGHT = 76;
+
+function formatLogDetails(details?: string) {
+  if (!details) return 'No details provided';
+  if (details.includes('Downloaded secured media')) return 'Downloaded media';
+  if (details.includes('Device Passcode / Fallback Verified')) return 'PIN Verified Fallback';
+  if (details.includes('Device Passcode Verification Failed')) return 'Verification Failed';
+  return details;
+}
 
 export default function LogsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -62,9 +73,70 @@ export default function LogsScreen() {
     };
   }, []);
 
-  const exportLogs = () => {
-    // TODO: wire to real export (share file, save to storage)
-    Alert.alert('Export Logs', 'Log export will be available here.');
+  const exportLogs = async () => {
+    try {
+      if (logsList.length === 0) {
+        Alert.alert('No Logs', 'There are no logs to export.');
+        return;
+      }
+      
+      const header = 'ID,Name,Details,Device,Status,Type,Date\n';
+      const rows = logsList.map(log => {
+        const safeName = `"${(log.name || '').replace(/"/g, '""')}"`;
+        const safeDetails = `"${(log.details || '').replace(/"/g, '""')}"`;
+        const safeDevice = `"${(log.device || '').replace(/"/g, '""')}"`;
+        const safeDate = `"${new Date(log.created_at || '').toLocaleString().replace(/"/g, '""')}"`;
+        
+        return `${log.id},${safeName},${safeDetails},${safeDevice},${log.status},${log.type},${safeDate}`;
+      }).join('\n');
+      
+      const csvData = header + rows;
+      const fileName = `dibs_audit_logs_${Date.now()}.csv`;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+      
+      await FileSystem.writeAsStringAsync(fileUri, csvData, { encoding: FileSystem.EncodingType.UTF8 });
+      
+      if (Platform.OS === 'android') {
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (permissions.granted) {
+          const base64Data = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
+          const uri = await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, fileName, 'text/csv');
+          await FileSystem.writeAsStringAsync(uri, base64Data, { encoding: FileSystem.EncodingType.Base64 });
+          Alert.alert('Download Complete', 'Logs successfully saved to your device.');
+          
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.from('logs').insert({
+            user_id: user?.id,
+            name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'System',
+            details: 'Exported audit logs archive',
+            device: Platform.OS,
+            status: 'verified',
+            type: 'success',
+          });
+        }
+      } else {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: 'Save Audit Logs',
+            UTI: 'public.comma-separated-values-text'
+          });
+          
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.from('logs').insert({
+            user_id: user?.id,
+            name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'System',
+            details: 'Exported audit logs archive',
+            device: Platform.OS,
+            status: 'verified',
+            type: 'success',
+          });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Export Error', 'Failed to generate the `.csv` payload securely.');
+    }
   };
 
   return (
@@ -141,7 +213,9 @@ export default function LogsScreen() {
                   </ThemedText>
                 </View>
               </View>
-              <ThemedText style={[styles.logDetails, { color: theme.mutedText }]}>{item.details || 'No details provided'}</ThemedText>
+              <ThemedText style={[styles.logDetails, { color: theme.mutedText }]}>
+                {formatLogDetails(item.details)}
+              </ThemedText>
               <View style={[styles.deviceTag, { backgroundColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
                 <MaterialIcons name="smartphone" size={14} color={theme.mutedText} />
                 <ThemedText style={[styles.deviceText, { color: theme.mutedText }]}>{item.device || 'Unknown Device'}</ThemedText>

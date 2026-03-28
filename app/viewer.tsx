@@ -50,7 +50,7 @@ export default function ViewerScreen() {
       await supabase.from('logs').insert({
         user_id: user?.id,
         name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
-        details: `Downloaded secured media archive to gallery`,
+        details: `Downloaded media`,
         device: Platform.OS,
         status: 'verified',
         type: 'success',

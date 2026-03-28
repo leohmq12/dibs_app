@@ -35,6 +35,14 @@ function formatRelativeTime(dateString?: string) {
   return `${Math.floor(diffHour / 24)}d ago`;
 }
 
+function formatLogDetails(details?: string) {
+  if (!details) return 'No details';
+  if (details.includes('Downloaded secured media')) return 'Downloaded media';
+  if (details.includes('Device Passcode / Fallback Verified')) return 'PIN Verified Fallback';
+  if (details.includes('Device Passcode Verification Failed')) return 'Verification Failed';
+  return details;
+}
+
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
@@ -55,7 +63,7 @@ export default function HomeScreen() {
           const mapped = data.map((d: any) => ({
             id: d.id,
             title: d.name || 'System Log',
-            subtitle: d.details || 'No details',
+            subtitle: formatLogDetails(d.details),
             time: formatRelativeTime(d.created_at),
             type: d.type || 'success',
           }));
@@ -87,7 +95,7 @@ export default function HomeScreen() {
           const newItem: ActivityItem = {
             id: d.id,
             title: d.name || 'System Log',
-            subtitle: d.details || 'No details',
+            subtitle: formatLogDetails(d.details),
             time: formatRelativeTime(d.created_at),
             type: d.type || 'success',
           };
@@ -121,7 +129,7 @@ export default function HomeScreen() {
               <DibsLogo width={110} height={42} />
             </View>
             <Pressable
-              onPress={() => {}}
+              onPress={() => router.push('/notifications')}
               style={({ pressed }) => [styles.topBarButton, styles.topBarButtonRight, pressed && styles.topBarButtonPressed]}
               hitSlop={12}
               accessibilityLabel="Notifications"
