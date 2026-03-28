@@ -11,8 +11,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { MOBILE_VIEWPORT, WebViewportContext } from '@/hooks/use-viewport-dimensions';
-import { DemoSessionProvider } from '@/hooks/demo-session';
 import { ThemeModeProvider, useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider } from '@/hooks/use-auth';
 import {
   Poppins_400Regular,
   Poppins_500Medium,

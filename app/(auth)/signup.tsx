@@ -29,9 +29,17 @@ export default function SignupScreen() {
   const inputBg = theme.inputBg;
   const placeholderColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(15,26,43,0.4)';
 
-  const handleCreateAccount = () => {
-    signIn();
-    router.replace('/(auth)/face-enroll');
+  const handleCreateAccount = async () => {
+    if (password !== confirmPassword) {
+      console.error("Passwords do not match");
+      return;
+    }
+    const { error } = await signUp(email, password);
+    if (!error) {
+      router.replace('/(auth)/face-enroll');
+    } else {
+      console.error(error.message);
+    }
   };
 
   return (
@@ -109,7 +117,7 @@ export default function SignupScreen() {
                 {agreedToTerms && <ThemedText style={styles.checkmark}>✓</ThemedText>}
               </View>
               <ThemedText style={[styles.checkboxLabel, { color: theme.mutedText }]}>
-                I've read and agree to the terms of privacy policy
+                I&apos;ve read and agree to the terms of privacy policy
               </ThemedText>
             </Pressable>
 

@@ -54,8 +54,8 @@ export function FloatingTabBar({ state, navigation }: any) {
         />
         <View style={styles.tabBarContent}>
           {TABS.map((tab, index) => {
-            const route = state.routes.find((r) => r.name === tab.name) ?? state.routes[index];
-            const routeIndex = state.routes.findIndex((r) => r.name === tab.name);
+            const route = state.routes.find((r: any) => r.name === tab.name) ?? state.routes[index];
+            const routeIndex = state.routes.findIndex((r: any) => r.name === tab.name);
             const isFocused = routeIndex >= 0 ? state.index === routeIndex : state.index === index;
             const btnWidth = index === 3 ? TAB_BUTTON_WIDTH_SETTINGS : TAB_BUTTON_WIDTH;
             const centerX = screenWidth * TAB_CENTER_RATIOS[index];

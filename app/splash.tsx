@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DibsLogo } from '@/components/dibs-logo';
 import { FontFamilies } from '@/constants/theme';
-import { useDemoSession } from '@/hooks/demo-session';
+import { useAuth } from '@/hooks/use-auth';
 
 // Splash uses fixed dark theme to match appUI.pen Splash Screen (node pTXsO)
 const SPLASH_BG = '#070A12';
@@ -16,13 +16,13 @@ const SPLASH_OVERLAY = require('@/assets/images/splash_overlay.png');
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { isSignedIn } = useDemoSession();
+  const { session, isLoading } = useAuth();
   const { width, height } = useViewportDimensions();
 
   useEffect(() => {
     if (isLoading) return;
     const timer = setTimeout(() => {
-      router.replace(isSignedIn ? '/(tabs)' : '/(auth)/login');
+      router.replace(session ? '/(tabs)' : '/(auth)/login');
     }, 1200);
     return () => clearTimeout(timer);
   }, [session, isLoading, router]);

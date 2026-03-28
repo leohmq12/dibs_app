@@ -76,7 +76,7 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
       panelX.setValue(-MENU_WIDTH);
       backdropOpacity.setValue(0);
     }
-  }, [visible]);
+  }, [visible, backdropOpacity, panelX]);
 
   const closeMenu = () => {
     RNAnimated.parallel([
@@ -264,7 +264,9 @@ export function SideMenu({ visible, onClose }: SideMenuProps) {
 
   if (Platform.OS === 'web' && portalRef?.current) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const ReactDOM = require('react-dom');
+      // eslint-disable-next-line react/no-find-dom-node
       const node = ReactDOM.findDOMNode(portalRef.current);
       if (node && typeof document !== 'undefined' && document.body.contains(node as Node)) {
         return ReactDOM.createPortal(overlayContent, node as Element);
