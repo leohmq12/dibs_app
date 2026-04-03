@@ -2,7 +2,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DibsLogo } from '@/components/dibs-logo';
@@ -27,15 +27,26 @@ export default function SignupScreen() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const inputBg = theme.inputBg;
   const placeholderColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(15,26,43,0.4)';
 
   const handleCreateAccount = async () => {
-    if (password !== confirmPassword) {
-      console.error("Passwords do not match");
+    if (!email || !password || !fullName) {
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', "Passwords do not match");
+      return;
+    }
+    if (!agreedToTerms) {
+      Alert.alert('Error', 'Please agree to the privacy policy');
+      return;
+    }
+    
+    setIsLoading(true);
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
@@ -62,8 +73,10 @@ export default function SignupScreen() {
         status: 'blocked',
         type: 'danger',
       });
+      Alert.alert('Error', error.message);
       console.error(error.message);
     }
+    setIsLoading(false);
   };
 
   return (
@@ -146,12 +159,17 @@ export default function SignupScreen() {
             </Pressable>
 
             <Pressable
+              disabled={isLoading}
               onPress={handleCreateAccount}
               style={({ pressed }) => [
                 styles.primaryButton,
-                { backgroundColor: theme.primary, opacity: pressed ? 0.92 : 1 },
+                { backgroundColor: theme.primary, opacity: pressed || isLoading ? 0.8 : 1 },
               ]}>
-              <ThemedText style={styles.primaryButtonText}>Create Account</ThemedText>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <ThemedText style={styles.primaryButtonText}>Create Account</ThemedText>
+              )}
             </Pressable>
           </View>
 

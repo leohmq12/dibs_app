@@ -1,9 +1,8 @@
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DibsLogo } from '@/components/dibs-logo';
@@ -24,6 +23,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const inputBg = theme.inputBg;
   const placeholderColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(15,26,43,0.4)';
@@ -75,7 +75,13 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable
+              disabled={isLoading}
               onPress={async () => {
+                if (!email || !password) {
+                  Alert.alert('Error', 'Please enter email and password');
+                  return;
+                }
+                setIsLoading(true);
                 const { error, data } = await supabase.auth.signInWithPassword({ email, password });
                 
                 if (!error) {
@@ -99,46 +105,23 @@ export default function LoginScreen() {
                     status: 'blocked',
                     type: 'danger',
                   });
+                  Alert.alert('Login Failed', error.message);
                   console.error(error.message);
                 }
+                setIsLoading(false);
               }}
               style={({ pressed }) => [
                 styles.primaryButton,
-                { backgroundColor: theme.primary, opacity: pressed ? 0.92 : 1 },
+                { backgroundColor: theme.primary, opacity: pressed || isLoading ? 0.8 : 1 },
               ]}>
-              <ThemedText style={styles.primaryButtonText}>Sign in</ThemedText>
+              {isLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <ThemedText style={styles.primaryButtonText}>Sign in</ThemedText>
+              )}
             </Pressable>
 
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: theme.accent }]} />
-              <ThemedText style={[styles.dividerText, { color: theme.accent }]}>or</ThemedText>
-              <View style={[styles.dividerLine, { backgroundColor: theme.accent }]} />
-            </View>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.socialButton,
-                {
-                  backgroundColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.1)' : 'rgba(34, 198, 217, 0.08)',
-                  borderColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.25)' : 'rgba(34, 198, 217, 0.2)',
-                  opacity: pressed ? 0.9 : 1,
-                },
-              ]}>
-              <FontAwesome5 name="google" size={20} color={theme.text} />
-              <ThemedText style={[styles.socialButtonText, { color: theme.text }]}>Sign in with Google</ThemedText>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.socialButton,
-                {
-                  backgroundColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.1)' : 'rgba(34, 198, 217, 0.08)',
-                  borderColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.25)' : 'rgba(34, 198, 217, 0.2)',
-                  opacity: pressed ? 0.9 : 1,
-                },
-              ]}>
-              <FontAwesome5 name="apple" size={20} color={theme.text} />
-              <ThemedText style={[styles.socialButtonText, { color: theme.text }]}>Sign in with Apple</ThemedText>
-            </Pressable>
           </View>
 
           <Pressable
