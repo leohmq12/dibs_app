@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+import { useResponsive } from '@/hooks/use-responsive';
 import { supabase } from '@/lib/supabase';
 
 type LogItem = {
@@ -39,6 +40,7 @@ export default function LogsScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const { isMobile } = useResponsive();
   const [search, setSearch] = useState('');
   const [logsList, setLogsList] = useState<LogItem[]>([]);
 
@@ -143,7 +145,7 @@ export default function LogsScreen() {
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         {/* Header — Pencil: Ma4qu (icon), 667xr (title), pN3cI + tMduy (filter) */}
-        <View style={styles.header}>
+        <View style={[styles.header, !isMobile && styles.tabletCont]}>
           <View style={[styles.headerIcon, { backgroundColor: theme.cardTint }]}>
             <MaterialIcons name="access-time" size={24} color={theme.accent} />
           </View>
@@ -158,7 +160,7 @@ export default function LogsScreen() {
         </View>
 
         {/* Search — Pencil MeZcF (343x36, radius 6) */}
-        <View style={[styles.searchWrap, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
+        <View style={[styles.searchWrap, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }, !isMobile && styles.tabletCont]}>
           <MaterialIcons name="search" size={18} color={theme.mutedText} />
           <TextInput
             placeholder="Search logs..."
@@ -170,16 +172,16 @@ export default function LogsScreen() {
         </View>
 
         {/* Section — TODAY + Events pill */}
-        <View style={styles.sectionRow}>
+        <View style={[styles.sectionRow, !isMobile && styles.tabletCont]}>
           <ThemedText style={[styles.sectionLabel, { color: theme.text }]}>TODAY</ThemedText>
           <View style={[styles.eventPill, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
             <ThemedText style={[styles.eventPillText, { color: theme.accent }]}>{logsList.length} Events</ThemedText>
           </View>
         </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.border }, !isMobile && styles.tabletCont]} />
 
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.list, !isMobile && styles.listTablet]} showsVerticalScrollIndicator={false}>
           {logsList.map((item) => (
             <View
               key={item.id}
@@ -245,7 +247,8 @@ export default function LogsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safeArea: { flex: 1 },
+  safeArea: { flex: 1, alignItems: 'center' },
+  tabletCont: { maxWidth: 800, width: '100%' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -298,7 +301,8 @@ const styles = StyleSheet.create({
   },
   eventPillText: { fontSize: 10, fontFamily: FontFamilies.medium },
   divider: { height: 1, marginHorizontal: 16, marginBottom: 12, opacity: 0.1 },
-  list: { paddingHorizontal: 16, paddingBottom: 140, gap: 12 },
+  list: { paddingHorizontal: 16, paddingBottom: 140, gap: 12, width: '100%' },
+  listTablet: { maxWidth: 800 },
   logCard: {
     borderRadius: 10,
     borderWidth: 1,

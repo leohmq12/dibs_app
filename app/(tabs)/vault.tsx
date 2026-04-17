@@ -1,14 +1,11 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
-import { decode } from 'base64-arraybuffer';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsive } from '@/hooks/use-responsive';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -30,18 +27,16 @@ export default function VaultScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const { width } = useViewportDimensions();
-  const insets = useSafeAreaInsets();
+  const { isTablet, isMobile, width } = useResponsive();
   const { isVaultVerified } = useDemoSession();
   const [filter, setFilter] = useState<Filter>('all');
-  const [isUploading, setIsUploading] = useState(false);
 
   const { user } = useAuth();
 
   const padding = 16;
   const gap = 8;
-  const cols = 2;
-  const tileWidth = (width - padding * 2 - gap) / cols;
+  const cols = isTablet ? 3 : isMobile ? 2 : 4;
+  const tileWidth = (Math.min(width, 800) - padding * 2 - gap * (cols - 1)) / cols;
 
   const [items, setItems] = useState<{ id: string; uri: string; type: 'image' | 'video' }[]>([]);
 
@@ -60,7 +55,7 @@ export default function VaultScreen() {
     const { data: signedUrls } = await supabase.storage.from('vault').createSignedUrls(fileNames, 60 * 60);
 
     if (signedUrls) {
-      const out = signedUrls.map((s, i) => {
+      const out = signedUrls.map((s: { signedUrl: string }, i: number) => {
         const fileName = fileNames[i];
         const isVid = /\.(mp4|mov|avi)$/i.test(fileName);
         return {
@@ -162,9 +157,10 @@ export default function VaultScreen() {
 
         <FlatList
           data={filtered}
-          numColumns={2}
+          numColumns={cols}
+          key={cols} // Force re-render on column change
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.gridContent}
+          contentContainerStyle={[styles.gridContent, !isMobile && styles.gridContentTablet]}
           columnWrapperStyle={styles.gridRow}
           renderItem={({ item }) => (
             <Pressable
@@ -186,7 +182,7 @@ export default function VaultScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safeArea: { flex: 1 },
+  safeArea: { flex: 1, alignItems: 'center' },
   lockedOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(7, 10, 18, 0.85)',
@@ -254,12 +250,15 @@ const styles = StyleSheet.create({
   headerText: { flex: 1 },
   headerTitle: { fontSize: 18, fontFamily: FontFamilies.semiBold },
   headerSubtitle: { fontSize: 14, opacity: 0.7 },
+  headerTablet: { maxWidth: 800, width: '100%' },
   filterRow: {
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
     marginBottom: 12,
+    width: '100%',
   },
+  filterRowTablet: { maxWidth: 800 },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -270,7 +269,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   filterLabel: { fontSize: 12 },
-  gridContent: { paddingHorizontal: 16, paddingBottom: 100 },
+  gridContent: { paddingHorizontal: 16, paddingBottom: 100, width: '100%' },
+  gridContentTablet: { maxWidth: 800 },
   gridRow: { gap: 8, marginBottom: 8 },
   tile: { borderRadius: 8, overflow: 'hidden', aspectRatio: 1 },
   tileImage: { width: '100%', height: '100%' },

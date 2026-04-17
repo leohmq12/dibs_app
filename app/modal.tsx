@@ -12,6 +12,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { useResponsive } from '@/hooks/use-responsive';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
@@ -19,15 +20,13 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
 
-const CARD_WIDTH = 320;
-const FACE_SIZE = 174;
-
 export default function IdentityVerificationModal() {
   const router = useRouter();
   const { verifyVault } = useDemoSession();
   const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const { isMobile } = useResponsive();
   const [authStatus, setAuthStatus] = useState<'scanning' | 'failed' | 'success'>('scanning');
 
   useEffect(() => {
@@ -122,7 +121,7 @@ export default function IdentityVerificationModal() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <Animated.View
             entering={FadeIn.duration(220)}
-            style={[styles.card, { backgroundColor: cardBg, borderColor: theme.cardTintBorder }]}>
+            style={[styles.card, { backgroundColor: cardBg, borderColor: theme.cardTintBorder }, !isMobile && styles.cardTablet]}>
             {/* Padlock — Pencil ADGv9: 60×60, teal tint */}
             <View style={[styles.iconWrap, { backgroundColor: theme.cardTint }]}>
               <MaterialIcons name="lock" size={32} color={theme.accent} />
@@ -246,14 +245,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   card: {
-    width: CARD_WIDTH,
-    maxWidth: '100%',
     borderRadius: 18,
     borderWidth: 1,
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 28,
     alignItems: 'center',
+  },
+  cardTablet: {
+    width: 480,
   },
   iconWrap: {
     width: 60,
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   faceFrame: {
-    width: FACE_SIZE,
-    height: FACE_SIZE,
+    width: 174,
+    height: 174,
     borderRadius: 18,
     borderWidth: 2,
     alignItems: 'center',

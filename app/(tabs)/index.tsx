@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useResponsive } from '@/hooks/use-responsive';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
@@ -48,6 +49,7 @@ export default function HomeScreen() {
   const theme = Colors[colorScheme];
   const router = useRouter();
   const { user } = useAuth();
+  const { isTablet, isMobile } = useResponsive();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [stats, setStats] = useState({ images: 0, videos: 0 });
@@ -114,7 +116,7 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.content, !isMobile && styles.contentTablet]} showsVerticalScrollIndicator={false}>
           {/* Top bar: sidebar (g59oc) | centered logo (BM6JB) | notification (pKd4o) */}
           <View style={styles.topBar}>
             <Pressable
@@ -164,7 +166,7 @@ export default function HomeScreen() {
 
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-          <View style={styles.statsRow}>
+          <View style={[styles.statsRow, isTablet && styles.statsRowTablet]}>
             <Pressable
               style={({ pressed }) => [
                 styles.statCard,
@@ -250,8 +252,9 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safeArea: { flex: 1 },
-  content: { paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 },
+  safeArea: { flex: 1, alignItems: 'center' },
+  content: { paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8, width: '100%' },
+  contentTablet: { maxWidth: 800 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,6 +313,7 @@ const styles = StyleSheet.create({
   protectedText: { fontSize: 11, fontFamily: FontFamilies.medium },
   divider: { height: 1, marginVertical: 10, opacity: 0.05 },
   statsRow: { flexDirection: 'row', gap: 19, marginBottom: 16 },
+  statsRowTablet: { gap: 32 },
   statCard: {
     flex: 1,
     borderRadius: 18,

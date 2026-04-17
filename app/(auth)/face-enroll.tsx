@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { useResponsive } from '@/hooks/use-responsive';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -14,6 +15,7 @@ export default function FaceEnrollScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'dark';
   const theme = Colors[colorScheme];
+  const { isMobile } = useResponsive();
 
   const handleEnroll = () => {
     router.replace('/(tabs)');
@@ -30,7 +32,8 @@ export default function FaceEnrollScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        {/* Header */}
+        <View style={!isMobile && styles.tabletCont}>
+          {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={handleBack} style={styles.backButton} hitSlop={12}>
             <MaterialIcons name="chevron-left" size={28} color={theme.text} />
@@ -110,6 +113,7 @@ export default function FaceEnrollScreen() {
           <ThemedText style={[styles.footerSecureText, { color: theme.mutedText }]}>
             DIBS Secured. Biometric data is encrypted.
           </ThemedText>
+          </View>
         </View>
       </SafeAreaView>
     </View>
@@ -118,7 +122,8 @@ export default function FaceEnrollScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safeArea: { flex: 1, paddingHorizontal: 24 },
+  safeArea: { flex: 1, paddingHorizontal: 24, alignItems: 'center' },
+  tabletCont: { maxWidth: 500, width: '100%', flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme, useSetColorScheme } from '@/hooks/use-color-scheme';
+import { useResponsive } from '@/hooks/use-responsive';
 import { supabase } from '@/lib/supabase';
 
 const SettingsScreen = () => {
@@ -19,6 +20,7 @@ const SettingsScreen = () => {
   const theme = Colors[colorScheme];
   const setColorScheme = useSetColorScheme();
   const { user, signOut } = useAuth();
+  const { isMobile } = useResponsive();
   const insets = useSafeAreaInsets();
 
   const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
@@ -44,7 +46,7 @@ const SettingsScreen = () => {
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
         {/* Header: gear icon + Settings title */}
-        <View style={styles.header}>
+        <View style={[styles.header, !isMobile && styles.tabletCont]}>
           <View style={[styles.headerIcon, { backgroundColor: cardBg }]}>
             <MaterialIcons name="settings" size={24} color={theme.accent} />
           </View>
@@ -55,7 +57,7 @@ const SettingsScreen = () => {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]}
           showsVerticalScrollIndicator={false}>
           {/* Rounded-bottom container (design: Frame 25) */}
-          <View style={[styles.contentCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+          <View style={[styles.contentCard, isMobile ? styles.contentCardMobile : styles.contentCardTablet, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* --- Account --- */}
             <ThemedText style={[styles.sectionTitle, { color: sectionTitleColor }]}>Account</ThemedText>
             <View style={[styles.block, { backgroundColor: cardBg, borderColor: cardBorder }]}>
@@ -193,7 +195,8 @@ export default SettingsScreen;
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safeArea: { flex: 1 },
+  safeArea: { flex: 1, alignItems: 'center' },
+  tabletCont: { maxWidth: 800, width: '100%' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,16 +222,21 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   contentCard: {
+    paddingTop: 24,
+    paddingBottom: 24,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  contentCardMobile: {
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     borderBottomLeftRadius: 14,
     borderBottomRightRadius: 14,
-    borderWidth: 1,
     borderTopWidth: 0,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 24,
-    overflow: 'hidden',
+  },
+  contentCardTablet: {
+    borderRadius: 14,
+    maxWidth: 800,
   },
   sectionTitle: {
     fontSize: 14,

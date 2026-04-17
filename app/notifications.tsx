@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useResponsive } from '@/hooks/use-responsive';
 import { supabase } from '@/lib/supabase';
 
 type LogItem = {
@@ -43,6 +44,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const { isMobile } = useResponsive();
   const [logsList, setLogsList] = useState<LogItem[]>([]);
 
   useFocusEffect(
@@ -79,7 +81,7 @@ export default function NotificationsScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.header}>
+        <View style={[styles.header, !isMobile && styles.tabletCont]}>
           <Pressable
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
@@ -89,9 +91,9 @@ export default function NotificationsScreen() {
           <ThemedText style={[styles.headerTitle, { color: theme.text }]}>Notifications</ThemedText>
         </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.border }, !isMobile && styles.tabletCont]} />
 
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.list, !isMobile && styles.listTablet]} showsVerticalScrollIndicator={false}>
           {logsList.length === 0 ? (
             <ThemedText style={[styles.emptyText, { color: theme.mutedText }]}>No notifications right now.</ThemedText>
           ) : (
@@ -130,7 +132,8 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safeArea: { flex: 1 },
+  safeArea: { flex: 1, alignItems: 'center' },
+  tabletCont: { maxWidth: 800, width: '100%' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -153,7 +156,8 @@ const styles = StyleSheet.create({
     marginTop: 60,
     fontFamily: FontFamilies.medium,
   },
-  list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
+  list: { paddingHorizontal: 16, paddingBottom: 40, gap: 12, width: '100%' },
+  listTablet: { maxWidth: 800 },
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'center',
