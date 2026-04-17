@@ -12,13 +12,13 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { useResponsive } from '@/hooks/use-responsive';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 
 export default function IdentityVerificationModal() {
   const router = useRouter();
@@ -26,8 +26,13 @@ export default function IdentityVerificationModal() {
   const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const { isMobile } = useResponsive();
   const [authStatus, setAuthStatus] = useState<'scanning' | 'failed' | 'success'>('scanning');
+  
+  const { width, isMobile } = useViewportDimensions();
+  
+  // Responsive values
+  const cardWidth = isMobile ? Math.min(width - 48, 340) : 420;
+  const faceSize = isMobile ? 174 : 220;
 
   useEffect(() => {
     let isMounted = true;
@@ -121,7 +126,7 @@ export default function IdentityVerificationModal() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <Animated.View
             entering={FadeIn.duration(220)}
-            style={[styles.card, { backgroundColor: cardBg, borderColor: theme.cardTintBorder }, !isMobile && styles.cardTablet]}>
+            style={[styles.card, { width: cardWidth, backgroundColor: cardBg, borderColor: theme.cardTintBorder }]}>
             {/* Padlock — Pencil ADGv9: 60×60, teal tint */}
             <View style={[styles.iconWrap, { backgroundColor: theme.cardTint }]}>
               <MaterialIcons name="lock" size={32} color={theme.accent} />
@@ -140,10 +145,10 @@ export default function IdentityVerificationModal() {
             </View>
 
             {/* Face / scan area — Pencil 1Cise: 174×174, teal border */}
-            <View style={[styles.faceFrame, { borderColor: theme.accent }]}>
+            <View style={[styles.faceFrame, { width: faceSize, height: faceSize, borderColor: theme.accent, borderRadius: isMobile ? 18 : 24 }]}>
               <Image
                 source={require('../assets/images/face.png')}
-                style={styles.faceImage}
+                style={[styles.faceImage, { width: faceSize - 22, height: faceSize - 22 }]}
                 contentFit="contain"
               />
             </View>
@@ -245,15 +250,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   card: {
+    maxWidth: '100%',
     borderRadius: 18,
     borderWidth: 1,
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 28,
     alignItems: 'center',
-  },
-  cardTablet: {
-    width: 480,
   },
   iconWrap: {
     width: 60,
@@ -292,9 +295,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   faceFrame: {
-    width: 174,
-    height: 174,
-    borderRadius: 18,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -302,8 +302,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   faceImage: {
-    width: 152,
-    height: 152,
     borderRadius: 12,
   },
   scanningPill: {

@@ -1,7 +1,8 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
+import type { ComponentProps } from 'react';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, View, ActivityIndicator, Alert } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, ActivityIndicator, Alert, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DibsLogo } from '@/components/dibs-logo';
@@ -10,169 +11,330 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useResponsive } from '@/hooks/use-responsive';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
+import { ResponsiveWrapper } from '@/components/responsive-wrapper';
+import { supabase } from '@/lib/supabase';
 
 export default function SignupScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const { isMobile } = useResponsive();
+  const { isMobile, isTablet } = useViewportDimensions();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = async () => {
-    if (!fullName || !email || !password) {
-      Alert.alert('Error', 'Please fill in all fields.');
+  const inputBg = theme.inputBg;
+  const placeholderColor = colorScheme === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(15,26,43,0.4)';
+
+  const handleCreateAccount = async () => {
+    if (!email || !password || !fullName) {
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters.');
+    if (password !== confirmPassword) {
+      Alert.alert('Error', "Passwords do not match");
       return;
     }
-
-    setLoading(true);
-    const { error } = await signUp(email, password, fullName);
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Signup Error', error.message);
+    if (!agreedToTerms) {
+      Alert.alert('Error', 'Please agree to the privacy policy');
+      return;
+    }
+    
+    setIsLoading(true);
+    const { error, data } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName || undefined } }
+    });
+    
+    if (!error) {
+      await supabase.from('logs').insert({
+        user_id: data?.user?.id,
+        name: fullName || email.split('@')[0],
+        details: 'Successful Account Creation',
+        device: Platform.OS,
+        status: 'verified',
+        type: 'success',
+      });
+      signUp(email, password);
+      router.replace('/(auth)/face-enroll');
     } else {
-      Alert.alert('Success', 'Profile created! Please log in.', [
-        { text: 'OK', onPress: () => router.replace('/login') },
-      ]);
+      await supabase.from('logs').insert({
+        user_id: null,
+        name: fullName || email.split('@')[0] || 'Unknown User',
+        details: `Failed Signup: ${error.message}`,
+        device: Platform.OS,
+        status: 'blocked',
+        type: 'danger',
+      });
+      Alert.alert('Error', error.message);
     }
+    setIsLoading(false);
   };
 
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <View style={[styles.content, !isMobile && styles.tabletCont]}>
-          <View style={styles.logoContainer}>
-            <DibsLogo width={200} height={77} />
-          </View>
-
-          <View>
-            <ThemedText style={styles.headerTitle}>Create Account</ThemedText>
-            <ThemedText style={[styles.headerSubtitle, { color: theme.mutedText }]}>
-              Join DIBS to secure your personal media.
-            </ThemedText>
+        <ResponsiveWrapper maxWidth={isTablet ? 450 : 500} style={styles.content}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            contentContainerStyle={styles.scrollContent}
+          >
+            <View style={styles.logoContainer}>
+              <DibsLogo width={isMobile ? 200 : 240} height={isMobile ? 77 : 92} />
+            </View>
 
             <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <ThemedText style={[styles.label, { color: theme.mutedText }]}>FULL NAME</ThemedText>
-                <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                  <MaterialIcons name="person-outline" size={20} color={theme.mutedText} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, { color: theme.text }]}
-                    placeholder="Enter your full name"
-                    placeholderTextColor={theme.mutedText}
-                    value={fullName}
-                    onChangeText={setFullName}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <ThemedText style={[styles.label, { color: theme.mutedText }]}>EMAIL ADDRESS</ThemedText>
-                <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                  <MaterialIcons name="alternate-email" size={20} color={theme.mutedText} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, { color: theme.text }]}
-                    placeholder="Enter your email"
-                    placeholderTextColor={theme.mutedText}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <ThemedText style={[styles.label, { color: theme.mutedText }]}>PASSWORD</ThemedText>
-                <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                  <MaterialIcons name="lock-outline" size={20} color={theme.mutedText} style={styles.inputIcon} />
-                  <TextInput
-                    style={[styles.input, { color: theme.text }]}
-                    placeholder="Create a password"
-                    placeholderTextColor={theme.mutedText}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                  />
-                </View>
-              </View>
+              <ThemedText type="title" style={[styles.headerTitle, { color: theme.text, fontSize: isMobile ? 24 : 32 }]}>
+                Create an account
+              </ThemedText>
+              <ThemedText style={[styles.subTitle, { color: theme.mutedText, fontSize: isMobile ? 14 : 16 }]}>
+                Use your email to get started
+              </ThemedText>
+              
+              <Field
+                label="Full Name"
+                placeholder="e.g. Jenny Wilson"
+                value={fullName}
+                onChangeText={setFullName}
+                theme={theme}
+                inputBg={inputBg}
+                placeholderColor={placeholderColor}
+              />
+              <Field
+                label="Email address"
+                placeholder="e.g. wilson09@gmail.com"
+                value={email}
+                onChangeText={setEmail}
+                theme={theme}
+                inputBg={inputBg}
+                placeholderColor={placeholderColor}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                textContentType="emailAddress"
+              />
+              <PasswordField
+                label="Password"
+                placeholder="•••••••••••••"
+                value={password}
+                onChangeText={setPassword}
+                theme={theme}
+                inputBg={inputBg}
+                placeholderColor={placeholderColor}
+                secureTextEntry={!showPassword}
+                onToggleVisibility={() => setShowPassword((v) => !v)}
+                textContentType="newPassword"
+              />
+              <PasswordField
+                label="Confirm Password"
+                placeholder="•••••••••••••"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                theme={theme}
+                inputBg={inputBg}
+                placeholderColor={placeholderColor}
+                secureTextEntry={!showConfirmPassword}
+                onToggleVisibility={() => setShowConfirmPassword((v) => !v)}
+                textContentType="newPassword"
+              />
 
               <Pressable
+                onPress={() => setAgreedToTerms(!agreedToTerms)}
+                style={styles.checkboxRow}>
+                <View
+                  style={[
+                    styles.checkbox,
+                    {
+                      backgroundColor: agreedToTerms ? theme.accent : 'transparent',
+                      borderColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15,26,43,0.15)',
+                    },
+                  ]}>
+                  {agreedToTerms && <ThemedText style={styles.checkmark}>✓</ThemedText>}
+                </View>
+                <ThemedText style={[styles.checkboxLabel, { color: theme.mutedText, fontSize: isMobile ? 13 : 15 }]}>
+                  I&apos;ve read and agree to the terms of privacy policy
+                </ThemedText>
+              </Pressable>
+
+              <Pressable
+                disabled={isLoading}
+                onPress={handleCreateAccount}
                 style={({ pressed }) => [
-                  styles.signupButton,
-                  { backgroundColor: theme.primary, opacity: pressed || loading ? 0.8 : 1 },
-                ]}
-                onPress={handleSignup}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" />
+                  styles.primaryButton,
+                  { backgroundColor: theme.primary, opacity: pressed || isLoading ? 0.8 : 1 },
+                ]}>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <ThemedText style={styles.signupButtonText}>Create Account</ThemedText>
+                  <ThemedText style={styles.primaryButtonText}>Create Account</ThemedText>
                 )}
               </Pressable>
             </View>
-          </View>
 
-          <View style={styles.footer}>
-            <ThemedText style={[styles.footerText, { color: theme.mutedText }]}>
-              Already have an account?{' '}
-            </ThemedText>
-            <Pressable onPress={() => router.push('/login')}>
-              <ThemedText style={[styles.footerLink, { color: theme.accent }]}>Sign In</ThemedText>
-            </Pressable>
-          </View>
-        </View>
+            <View style={styles.footer}>
+              <Pressable
+                onPress={() => router.replace('/(auth)/login')}
+                style={({ pressed }) => [styles.footerLink, { opacity: pressed ? 0.8 : 1 }]}>
+                <ThemedText style={[styles.footerLinkText, { color: theme.mutedText, fontSize: isMobile ? 14 : 16 }]}>
+                  Already have an account? <ThemedText style={{ color: theme.accent, fontFamily: FontFamilies.medium }}>Sign in</ThemedText>
+                </ThemedText>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </ResponsiveWrapper>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
+function Field({
+  label,
+  placeholder,
+  theme,
+  inputBg,
+  placeholderColor,
+  ...props
+}: {
+  label: string;
+  placeholder?: string;
+  theme: typeof Colors.light;
+  inputBg: string;
+  placeholderColor: string;
+} & ComponentProps<typeof TextInput>) {
+  return (
+    <View style={styles.fieldWrap}>
+      <ThemedText style={[styles.fieldLabel, { color: theme.text }]}>{label}</ThemedText>
+      <TextInput
+        placeholder={placeholder ?? label}
+        placeholderTextColor={placeholderColor}
+        style={[
+          styles.input,
+          {
+            backgroundColor: inputBg,
+            borderColor: theme.inputBorder,
+            color: theme.text,
+          },
+        ]}
+        {...props}
+      />
+    </View>
+  );
+}
+
+function PasswordField({
+  label,
+  placeholder,
+  theme,
+  inputBg,
+  placeholderColor,
+  secureTextEntry,
+  onToggleVisibility,
+  ...props
+}: {
+  label: string;
+  placeholder?: string;
+  theme: typeof Colors.light;
+  inputBg: string;
+  placeholderColor: string;
+  secureTextEntry: boolean;
+  onToggleVisibility: () => void;
+} & ComponentProps<typeof TextInput>) {
+  return (
+    <View style={styles.fieldWrap}>
+      <ThemedText style={[styles.fieldLabel, { color: theme.text }]}>{label}</ThemedText>
+      <View style={styles.passwordInputWrap}>
+        <TextInput
+          placeholder={placeholder ?? label}
+          placeholderTextColor={placeholderColor}
+          secureTextEntry={secureTextEntry}
+          style={[
+            styles.input,
+            styles.inputWithRightIcon,
+            {
+              backgroundColor: inputBg,
+              borderColor: theme.inputBorder,
+              color: theme.text,
+            },
+          ]}
+          {...props}
+        />
+        <Pressable
+          onPress={onToggleVisibility}
+          style={styles.eyeButton}
+          hitSlop={12}
+          accessibilityLabel={secureTextEntry ? 'Show password' : 'Hide password'}>
+          <MaterialIcons
+            name={secureTextEntry ? 'visibility-off' : 'visibility'}
+            size={22}
+            color={theme.mutedText}
+          />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safeArea: { flex: 1, paddingHorizontal: 16, alignItems: 'center' },
-  tabletCont: { maxWidth: 480, width: '100%' },
-  content: { flex: 1, paddingTop: 24, justifyContent: 'space-between' },
+  safeArea: { flex: 1, paddingHorizontal: 16 },
+  content: { flex: 1 },
+  scrollContent: { paddingTop: 24, paddingBottom: 24 },
   logoContainer: { alignItems: 'center', marginBottom: 32 },
-  headerTitle: { fontSize: 24, lineHeight: 30, letterSpacing: -1, marginBottom: 4 },
-  headerSubtitle: { fontSize: 14, marginBottom: 32 },
-  form: { gap: 20 },
-  inputGroup: { gap: 8 },
-  label: { fontSize: 11, fontFamily: FontFamilies.bold, letterSpacing: 0.5 },
-  inputContainer: {
-    height: 52,
-    borderRadius: 12,
+  headerTitle: { fontFamily: FontFamilies.semiBold, lineHeight: 40, letterSpacing: -1, marginBottom: 4 },
+  subTitle: { lineHeight: 22, opacity: 0.9, marginBottom: 24 },
+  form: { gap: 14 },
+  fieldWrap: { marginBottom: 4 },
+  fieldLabel: { fontSize: 14, lineHeight: 22, marginBottom: 6 },
+  input: {
+    height: 54,
+    borderRadius: 8,
     borderWidth: 1,
+    paddingHorizontal: 20,
+    fontSize: 14,
+    fontFamily: FontFamilies.regular,
+  },
+  passwordInputWrap: { position: 'relative', justifyContent: 'center' },
+  inputWithRightIcon: { paddingRight: 48 },
+  eyeButton: {
+    position: 'absolute',
+    right: 14,
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    gap: 10,
+    marginTop: 8,
   },
-  inputIcon: { marginRight: 12 },
-  input: { flex: 1, fontSize: 15, fontFamily: FontFamilies.medium },
-  signupButton: {
-    height: 52,
-    borderRadius: 12,
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkmark: { color: '#FFF', fontSize: 12, fontFamily: FontFamilies.semiBold },
+  checkboxLabel: { flex: 1, lineHeight: 22 },
+  primaryButton: {
+    height: 50,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
   },
-  signupButtonText: { color: '#FFF', fontSize: 16, fontFamily: FontFamilies.semiBold },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 0 : 24,
-  },
-  footerText: { fontSize: 14 },
-  footerLink: { fontSize: 14, fontFamily: FontFamilies.semiBold },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontFamily: FontFamilies.semiBold },
+  footer: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', marginTop: 24 },
+  footerLink: { paddingVertical: 16, alignItems: 'center' },
+  footerLinkText: { fontFamily: FontFamilies.medium },
 });
