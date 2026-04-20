@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DibsLogo } from '@/components/dibs-logo';
 import { FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
+import { hasEnrollment } from '@/lib/face-recognition';
 
 // Splash uses fixed dark theme to match appUI.pen Splash Screen (node pTXsO)
 const SPLASH_BG = '#070A12';
@@ -21,10 +22,26 @@ export default function SplashScreen() {
 
   useEffect(() => {
     if (isLoading) return;
-    const timer = setTimeout(() => {
-      router.replace(session ? '/(tabs)' : '/(auth)/login');
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      if (!session) {
+        router.replace('/(auth)/login');
+        return;
+      }
+      try {
+        const enrolled = await hasEnrollment(session.user.id);
+        if (cancelled) return;
+        router.replace(enrolled ? '/(tabs)' : '/(auth)/face-enroll');
+      } catch {
+        if (cancelled) return;
+        router.replace('/(tabs)');
+      }
     }, 1200);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [session, isLoading, router]);
 
   return (
