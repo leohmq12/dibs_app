@@ -1,14 +1,13 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
-import { decode } from 'base64-arraybuffer';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ResponsiveWrapper } from '@/components/responsive-wrapper';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -30,18 +29,22 @@ export default function VaultScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
-  const { width } = useViewportDimensions();
+  const { width, isMobile, isTablet } = useViewportDimensions();
   const insets = useSafeAreaInsets();
   const { isVaultVerified } = useDemoSession();
   const [filter, setFilter] = useState<Filter>('all');
-  const [isUploading, setIsUploading] = useState(false);
 
   const { user } = useAuth();
 
   const padding = 16;
-  const gap = 8;
-  const cols = 2;
-  const tileWidth = (width - padding * 2 - gap) / cols;
+  const gap = 12;
+  
+  // Responsive columns
+  const cols = isMobile ? 2 : isTablet ? 3 : 4;
+  
+  // Actual container width (limited on large screens)
+  const containerWidth = isMobile ? width : Math.min(width, 1000);
+  const tileWidth = (containerWidth - padding * 2 - gap * (cols - 1)) / cols;
 
   const [items, setItems] = useState<{ id: string; uri: string; type: 'image' | 'video' }[]>([]);
 
@@ -79,8 +82,6 @@ export default function VaultScreen() {
     }, [loadVault])
   );
 
-
-
   const filtered = useMemo(() => {
     if (filter === 'all') return items;
     return items.filter((i) => i.type === (filter === 'photos' ? 'image' : 'video'));
@@ -89,22 +90,20 @@ export default function VaultScreen() {
   if (!isVaultVerified) {
     return (
       <ThemedView style={styles.screen}>
-        {/* Dark overlay — Pencil 2kqIm (blur + #070a121a) */}
         <View style={styles.lockedOverlay} />
         <SafeAreaView edges={['top']} style={styles.safeArea}>
           <View style={styles.lockedWrap}>
-            {/* Single blue card — Pencil k9oFo / HpbgN: 280×256, radius 18, gradient */}
             <LinearGradient
               colors={theme.blueGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.lockedCard}
+              style={[styles.lockedCard, !isMobile && { width: 400, paddingVertical: 40 }]}
             >
               <View style={styles.lockedIconWrap}>
-                <MaterialIcons name="lock" size={26} color="#FFF" />
+                <MaterialIcons name="lock" size={32} color="#FFF" />
               </View>
-              <ThemedText style={styles.lockedTitle}>Verify to view content</ThemedText>
-              <ThemedText style={styles.lockedSubtitle}>
+              <ThemedText style={[styles.lockedTitle, !isMobile && { fontSize: 24 }]}>Verify to view content</ThemedText>
+              <ThemedText style={[styles.lockedSubtitle, !isMobile && { fontSize: 16 }]}>
                 Your vault stays hidden until identity verification is complete.
               </ThemedText>
               <Pressable
@@ -112,8 +111,9 @@ export default function VaultScreen() {
                 style={({ pressed }) => [
                   styles.verifyButton,
                   { backgroundColor: theme.primary, opacity: pressed ? 0.9 : 1 },
+                  !isMobile && { width: 300, height: 54 }
                 ]}>
-                <ThemedText style={styles.verifyButtonText}>Verify to view content</ThemedText>
+                <ThemedText style={[styles.verifyButtonText, !isMobile && { fontSize: 16 }]}>Verify Identity</ThemedText>
               </Pressable>
             </LinearGradient>
           </View>
@@ -125,55 +125,59 @@ export default function VaultScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.header}>
-          <View style={[styles.headerIcon, { backgroundColor: theme.cardTint }]}>
-            <MaterialIcons name="lock" size={24} color={theme.accent} />
+        <ResponsiveWrapper maxWidth={1000} style={styles.headerWrapper}>
+          <View style={styles.header}>
+            <View style={[styles.headerIcon, { backgroundColor: theme.cardTint }]}>
+              <MaterialIcons name="lock" size={24} color={theme.accent} />
+            </View>
+            <View style={styles.headerText}>
+              <ThemedText style={[styles.headerTitle, { color: theme.text, fontSize: isMobile ? 18 : 24 }]}>Media Vault</ThemedText>
+              <ThemedText style={[styles.headerSubtitle, { color: theme.mutedText }]}>{filtered.length} items</ThemedText>
+            </View>
           </View>
-          <View style={styles.headerText}>
-            <ThemedText style={[styles.headerTitle, { color: theme.text }]}>Media Vault</ThemedText>
-            <ThemedText style={[styles.headerSubtitle, { color: theme.mutedText }]}>{filtered.length} items</ThemedText>
-          </View>
-        </View>
 
-        <View style={styles.filterRow}>
-          {FILTERS.map((f) => {
-            const isActive = filter === f.id;
-            return (
-              <Pressable
-                key={f.id}
-                onPress={() => setFilter(f.id)}
-                style={({ pressed }) => [
-                  styles.filterChip,
-                  {
-                    backgroundColor: isActive ? (colorScheme === 'dark' ? theme.cardTint : theme.surface2) : 'transparent',
-                    borderColor: isActive ? theme.accent : theme.cardTintBorder,
-                    opacity: pressed ? 0.9 : 1,
-                  },
-                ]}>
-                {f.id === 'photos' && <MaterialIcons name="image" size={14} color={isActive ? theme.accent : theme.mutedText} />}
-                {f.id === 'videos' && <MaterialIcons name="videocam" size={14} color={isActive ? theme.accent : theme.mutedText} />}
-                <ThemedText style={[styles.filterLabel, { color: isActive ? theme.text : theme.mutedText, fontFamily: isActive ? FontFamilies.medium : FontFamilies.regular }]}>
-                  {f.label}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
+          <View style={styles.filterRow}>
+            {FILTERS.map((f) => {
+              const isActive = filter === f.id;
+              return (
+                <Pressable
+                  key={f.id}
+                  onPress={() => setFilter(f.id)}
+                  style={({ pressed }) => [
+                    styles.filterChip,
+                    {
+                      backgroundColor: isActive ? (colorScheme === 'dark' ? theme.cardTint : theme.surface2) : 'transparent',
+                      borderColor: isActive ? theme.accent : theme.cardTintBorder,
+                      opacity: pressed ? 0.9 : 1,
+                    },
+                    !isMobile && { paddingHorizontal: 20, paddingVertical: 10 }
+                  ]}>
+                  {f.id === 'photos' && <MaterialIcons name="image" size={16} color={isActive ? theme.accent : theme.mutedText} />}
+                  {f.id === 'videos' && <MaterialIcons name="videocam" size={16} color={isActive ? theme.accent : theme.mutedText} />}
+                  <ThemedText style={[styles.filterLabel, { color: isActive ? theme.text : theme.mutedText, fontFamily: isActive ? FontFamilies.medium : FontFamilies.regular, fontSize: isMobile ? 12 : 14 }]}>
+                    {f.label}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ResponsiveWrapper>
 
         <FlatList
           data={filtered}
-          numColumns={2}
+          numColumns={cols}
+          key={cols} // Force re-render when cols change
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.gridContent}
+          contentContainerStyle={[styles.gridContent, { alignSelf: isMobile ? 'stretch' : 'center', width: containerWidth }]}
           columnWrapperStyle={styles.gridRow}
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push({ pathname: '/viewer', params: { url: item.uri, type: item.type } })}
-              style={({ pressed }) => [styles.tile, { width: tileWidth - gap / 2, opacity: pressed ? 0.9 : 1 }]}>
+              style={({ pressed }) => [styles.tile, { width: tileWidth, opacity: pressed ? 0.9 : 1 }]}>
               <Image source={{ uri: item.uri }} style={styles.tileImage} contentFit="cover" />
               {item.type === 'video' && (
-                <View style={styles.videoBadge}>
-                  <MaterialIcons name="videocam" size={14} color="#FFF" />
+                <View style={[styles.videoBadge, !isMobile && { padding: 8, borderRadius: 8 }]}>
+                  <MaterialIcons name="videocam" size={isMobile ? 14 : 20} color="#FFF" />
                 </View>
               )}
             </Pressable>
@@ -195,10 +199,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 48,
+    paddingHorizontal: 24,
   },
   lockedCard: {
-    width: 280,
     borderRadius: 18,
     paddingHorizontal: 26,
     paddingTop: 24,
@@ -206,23 +209,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   lockedIconWrap: {
-    width: 50,
-    height: 50,
-    borderRadius: 10,
+    width: 60,
+    height: 60,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
   lockedTitle: {
-    fontSize: 18,
     fontFamily: FontFamilies.semiBold,
     textAlign: 'center',
     color: '#FFF',
     marginBottom: 12,
   },
   lockedSubtitle: {
-    fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
     color: 'rgba(255,255,255,0.7)',
@@ -235,7 +236,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  verifyButtonText: { color: '#FFF', fontSize: 14, fontFamily: FontFamilies.semiBold },
+  verifyButtonText: { color: '#FFF', fontFamily: FontFamilies.semiBold },
+  headerWrapper: {
+    alignSelf: 'center',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -252,11 +256,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: { flex: 1 },
-  headerTitle: { fontSize: 18, fontFamily: FontFamilies.semiBold },
+  headerTitle: { fontFamily: FontFamilies.semiBold },
   headerSubtitle: { fontSize: 14, opacity: 0.7 },
   filterRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
     paddingHorizontal: 16,
     marginBottom: 12,
   },
@@ -265,14 +269,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     borderRadius: 40,
     borderWidth: 1,
   },
-  filterLabel: { fontSize: 12 },
+  filterLabel: { },
   gridContent: { paddingHorizontal: 16, paddingBottom: 100 },
-  gridRow: { gap: 8, marginBottom: 8 },
-  tile: { borderRadius: 8, overflow: 'hidden', aspectRatio: 1 },
+  gridRow: { gap: 12, marginBottom: 12 },
+  tile: { borderRadius: 12, overflow: 'hidden', aspectRatio: 1 },
   tileImage: { width: '100%', height: '100%' },
   videoBadge: {
     position: 'absolute',

@@ -2,7 +2,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View, ActivityIndicator, Alert } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DibsLogo } from '@/components/dibs-logo';
@@ -11,14 +11,16 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
+import { ResponsiveWrapper } from '@/components/responsive-wrapper';
 import { supabase } from '@/lib/supabase';
-import { Platform } from 'react-native';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { signIn } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const { isMobile, isTablet } = useViewportDimensions();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,107 +33,105 @@ export default function LoginScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <View style={styles.content}>
-          <View style={styles.logoContainer}>
-            <DibsLogo width={200} height={77} />
-          </View>
+        <ResponsiveWrapper maxWidth={isTablet ? 450 : 500} style={styles.content}>
+          <View style={styles.topSection}>
+            <View style={styles.logoContainer}>
+              <DibsLogo width={isMobile ? 200 : 260} height={isMobile ? 77 : 100} />
+            </View>
 
-          <View style={styles.form}>
-            <ThemedText type="title" style={[styles.headerTitle, { color: theme.text }]}>
-              Welcome back
-            </ThemedText>
-            <ThemedText style={[styles.subTitle, { color: theme.mutedText }]}>
-              Sign in with your email to continue
-            </ThemedText>
-            <Field
-              label="Email address"
-              placeholder="e.g. wilson09@gmail.com"
-              value={email}
-              onChangeText={setEmail}
-              theme={theme}
-              inputBg={inputBg}
-              placeholderColor={placeholderColor}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              textContentType="emailAddress"
-            />
-            <PasswordField
-              label="Password"
-              placeholder="•••••••••••••"
-              value={password}
-              onChangeText={setPassword}
-              theme={theme}
-              inputBg={inputBg}
-              placeholderColor={placeholderColor}
-              secureTextEntry={!showPassword}
-              onToggleVisibility={() => setShowPassword((v) => !v)}
-              textContentType="password"
-            />
-            <Pressable
-              onPress={() => router.push('/(auth)/login')}
-              style={styles.forgotWrap}
-              hitSlop={8}>
-              <ThemedText style={[styles.forgotText, { color: theme.accent }]}>Forgot password?</ThemedText>
-            </Pressable>
+            <View style={styles.form}>
+              <ThemedText type="title" style={[styles.headerTitle, { color: theme.text, fontSize: isMobile ? 24 : 32 }]}>
+                Welcome back
+              </ThemedText>
+              <ThemedText style={[styles.subTitle, { color: theme.mutedText, fontSize: isMobile ? 14 : 16 }]}>
+                Sign in with your email to continue
+              </ThemedText>
+              <Field
+                label="Email address"
+                placeholder="e.g. wilson09@gmail.com"
+                value={email}
+                onChangeText={setEmail}
+                theme={theme}
+                inputBg={inputBg}
+                placeholderColor={placeholderColor}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                textContentType="emailAddress"
+              />
+              <PasswordField
+                label="Password"
+                placeholder="•••••••••••••"
+                value={password}
+                onChangeText={setPassword}
+                theme={theme}
+                inputBg={inputBg}
+                placeholderColor={placeholderColor}
+                secureTextEntry={!showPassword}
+                onToggleVisibility={() => setShowPassword((v) => !v)}
+                textContentType="password"
+              />
+              <Pressable
+                onPress={() => {}} // Forgot password logic
+                style={styles.forgotWrap}
+                hitSlop={8}>
+                <ThemedText style={[styles.forgotText, { color: theme.accent }]}>Forgot password?</ThemedText>
+              </Pressable>
 
-            <Pressable
-              disabled={isLoading}
-              onPress={async () => {
-                if (!email || !password) {
-                  Alert.alert('Error', 'Please enter email and password');
-                  return;
-                }
-                setIsLoading(true);
-                const { error, data } = await supabase.auth.signInWithPassword({ email, password });
-                
-                if (!error) {
-                  await supabase.from('logs').insert({
-                    user_id: data?.user?.id,
-                    name: data?.user?.user_metadata?.full_name || email.split('@')[0],
-                    details: 'Successful Login',
-                    device: Platform.OS,
-                    status: 'verified',
-                    type: 'success',
-                  });
-                  // Also call context signIn to trigger state if needed
-                  signIn(email, password); 
-                  router.replace('/(tabs)');
-                } else {
-                  await supabase.from('logs').insert({
-                    user_id: null,
-                    name: email.split('@')[0] || 'Unknown User',
-                    details: `Failed Login: ${error.message}`,
-                    device: Platform.OS,
-                    status: 'blocked',
-                    type: 'danger',
-                  });
-                  Alert.alert('Login Failed', error.message);
-                  console.error(error.message);
-                }
-                setIsLoading(false);
-              }}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                { backgroundColor: theme.primary, opacity: pressed || isLoading ? 0.8 : 1 },
-              ]}>
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <ThemedText style={styles.primaryButtonText}>Sign in</ThemedText>
-              )}
-            </Pressable>
-
-
+              <Pressable
+                disabled={isLoading}
+                onPress={async () => {
+                  if (!email || !password) {
+                    Alert.alert('Error', 'Please enter email and password');
+                    return;
+                  }
+                  setIsLoading(true);
+                  const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+                  
+                  if (!error) {
+                    await supabase.from('logs').insert({
+                      user_id: data?.user?.id,
+                      name: data?.user?.user_metadata?.full_name || email.split('@')[0],
+                      details: 'Successful Login',
+                      device: Platform.OS,
+                      status: 'verified',
+                      type: 'success',
+                    });
+                    signIn(email, password); 
+                    router.replace('/(tabs)');
+                  } else {
+                    await supabase.from('logs').insert({
+                      user_id: null,
+                      name: email.split('@')[0] || 'Unknown User',
+                      details: `Failed Login: ${error.message}`,
+                      device: Platform.OS,
+                      status: 'blocked',
+                      type: 'danger',
+                    });
+                    Alert.alert('Login Failed', error.message);
+                  }
+                  setIsLoading(false);
+                }}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  { backgroundColor: theme.primary, opacity: pressed || isLoading ? 0.8 : 1 },
+                ]}>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <ThemedText style={styles.primaryButtonText}>Sign in</ThemedText>
+                )}
+              </Pressable>
+            </View>
           </View>
 
           <Pressable
             onPress={() => router.push('/(auth)/signup')}
             style={({ pressed }) => [styles.footerLink, { opacity: pressed ? 0.8 : 1 }]}>
-            <ThemedText style={[styles.footerLinkText, { color: theme.mutedText }]}>
+            <ThemedText style={[styles.footerLinkText, { color: theme.mutedText, fontSize: isMobile ? 14 : 16 }]}>
               New on DIBS? <ThemedText style={{ color: theme.accent, fontFamily: FontFamilies.medium }}>Create an account</ThemedText>
             </ThemedText>
           </Pressable>
-        </View>
+        </ResponsiveWrapper>
       </SafeAreaView>
     </ThemedView>
   );
@@ -226,11 +226,12 @@ function PasswordField({
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  safeArea: { flex: 1, paddingHorizontal: 16 },
-  content: { flex: 1, paddingTop: 24, justifyContent: 'space-between' },
+  safeArea: { flex: 1 },
+  content: { flex: 1, paddingHorizontal: 16, paddingTop: 24, justifyContent: 'space-between' },
+  topSection: { },
   logoContainer: { alignItems: 'center', marginBottom: 32 },
-  headerTitle: { fontSize: 24, lineHeight: 30, letterSpacing: -1, marginBottom: 4 },
-  subTitle: { fontSize: 14, lineHeight: 22, opacity: 0.9, marginBottom: 24 },
+  headerTitle: { fontFamily: FontFamilies.semiBold, lineHeight: 40, letterSpacing: -1, marginBottom: 4 },
+  subTitle: { lineHeight: 22, opacity: 0.9, marginBottom: 24 },
   form: { gap: 16 },
   fieldWrap: { marginBottom: 4 },
   fieldLabel: { fontSize: 14, lineHeight: 22, marginBottom: 6 },
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
   forgotWrap: { alignSelf: 'flex-end', marginTop: -4 },
   forgotText: { fontSize: 14, fontFamily: FontFamilies.medium },
   primaryButton: {
-    height: 46,
+    height: 50,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -262,28 +263,9 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: FontFamilies.semiBold,
   },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    marginTop: 8,
-  },
-  dividerLine: { width: 72, height: 1, opacity: 0.1 },
-  dividerText: { fontSize: 16, fontFamily: FontFamilies.medium },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    height: 46,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  socialButtonText: { fontSize: 14, fontFamily: FontFamilies.medium },
-  footerLink: { paddingVertical: 16, alignItems: 'center' },
-  footerLinkText: { fontSize: 14, fontFamily: FontFamilies.medium },
+  footerLink: { paddingVertical: 24, alignItems: 'center' },
+  footerLinkText: { fontFamily: FontFamilies.medium },
 });

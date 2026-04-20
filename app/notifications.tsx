@@ -8,6 +8,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
+import { ResponsiveWrapper } from '@/components/responsive-wrapper';
 import { supabase } from '@/lib/supabase';
 
 type LogItem = {
@@ -43,6 +45,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
+  const { isMobile, isTablet } = useViewportDimensions();
   const [logsList, setLogsList] = useState<LogItem[]>([]);
 
   useFocusEffect(
@@ -79,50 +82,52 @@ export default function NotificationsScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={theme.text} />
-          </Pressable>
-          <ThemedText style={[styles.headerTitle, { color: theme.text }]}>Notifications</ThemedText>
-        </View>
+        <ResponsiveWrapper maxWidth={isTablet ? 700 : 600} style={styles.content}>
+          <View style={styles.header}>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
+            >
+              <MaterialIcons name="arrow-back" size={24} color={theme.text} />
+            </Pressable>
+            <ThemedText style={[styles.headerTitle, { color: theme.text, fontSize: isMobile ? 20 : 26 }]}>Notifications</ThemedText>
+          </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {logsList.length === 0 ? (
-            <ThemedText style={[styles.emptyText, { color: theme.mutedText }]}>No notifications right now.</ThemedText>
-          ) : (
-            logsList.map((item) => (
-              <View
-                key={item.id}
-                style={[styles.notificationCard, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
+          <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+            {logsList.length === 0 ? (
+              <ThemedText style={[styles.emptyText, { color: theme.mutedText }]}>No notifications right now.</ThemedText>
+            ) : (
+              logsList.map((item) => (
                 <View
-                  style={[
-                    styles.iconWrap,
-                    { backgroundColor: item.type === 'success' ? 'rgba(57, 198, 149, 0.15)' : 'rgba(239, 68, 68, 0.15)' },
-                  ]}>
-                  <MaterialIcons
-                    name={item.type === 'success' ? 'notifications-active' : 'notification-important'}
-                    size={20}
-                    color={item.type === 'success' ? theme.success : theme.danger}
-                  />
+                  key={item.id}
+                  style={[styles.notificationCard, { backgroundColor: theme.cardTint, borderColor: theme.cardTintBorder }]}>
+                  <View
+                    style={[
+                      styles.iconWrap,
+                      { backgroundColor: item.type === 'success' ? 'rgba(57, 198, 149, 0.15)' : 'rgba(239, 68, 68, 0.15)' },
+                    ]}>
+                    <MaterialIcons
+                      name={item.type === 'success' ? 'notifications-active' : 'notification-important'}
+                      size={20}
+                      color={item.type === 'success' ? theme.success : theme.danger}
+                    />
+                  </View>
+                  <View style={styles.contentWrap}>
+                    <ThemedText style={[styles.titleText, { color: theme.text, fontSize: isMobile ? 15 : 17 }]}>System Alert from {item.device}</ThemedText>
+                    <ThemedText style={[styles.detailsText, { color: theme.mutedText, fontSize: isMobile ? 13 : 15 }]}>
+                      {formatLogDetails(item.details)}
+                    </ThemedText>
+                    <ThemedText style={[styles.timeText, { color: theme.accent, fontSize: isMobile ? 11 : 13 }]}>
+                      {formatRelativeTime(item.created_at)}
+                    </ThemedText>
+                  </View>
                 </View>
-                <View style={styles.contentWrap}>
-                  <ThemedText style={[styles.titleText, { color: theme.text }]}>System Alert from {item.device}</ThemedText>
-                  <ThemedText style={[styles.detailsText, { color: theme.mutedText }]}>
-                    {formatLogDetails(item.details)}
-                  </ThemedText>
-                  <ThemedText style={[styles.timeText, { color: theme.accent }]}>
-                    {formatRelativeTime(item.created_at)}
-                  </ThemedText>
-                </View>
-              </View>
-            ))
-          )}
-        </ScrollView>
+              ))
+            )}
+          </ScrollView>
+        </ResponsiveWrapper>
       </SafeAreaView>
     </ThemedView>
   );
@@ -131,6 +136,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safeArea: { flex: 1 },
+  content: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -146,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: { fontSize: 20, fontFamily: FontFamilies.semiBold, flex: 1 },
+  headerTitle: { fontFamily: FontFamilies.semiBold, flex: 1 },
   divider: { height: 1, opacity: 0.1, marginBottom: 12 },
   emptyText: {
     textAlign: 'center',
@@ -170,7 +176,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   contentWrap: { flex: 1, gap: 4 },
-  titleText: { fontSize: 15, fontFamily: FontFamilies.medium },
-  detailsText: { fontSize: 13, lineHeight: 18 },
-  timeText: { fontSize: 11, fontFamily: FontFamilies.medium, marginTop: 4 },
+  titleText: { fontFamily: FontFamilies.medium },
+  detailsText: { lineHeight: 18 },
+  timeText: { fontFamily: FontFamilies.medium, marginTop: 4 },
 });

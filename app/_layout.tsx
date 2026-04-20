@@ -5,12 +5,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
-import { MOBILE_VIEWPORT, WebViewportContext } from '@/hooks/use-viewport-dimensions';
+import { MOBILE_VIEWPORT, WebViewportContext, useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import { ThemeModeProvider, useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/hooks/use-auth';
 import { DemoSessionProvider } from '@/hooks/demo-session';
@@ -79,78 +79,53 @@ function RootNavigator() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       {isWeb ? (
         <WebShell colorScheme={colorScheme}>
-          <Stack
-            initialRouteName="splash"
-            screenOptions={{ headerShown: false, animation: 'fade', animationDuration: 220 }}>
-            <Stack.Screen name="splash" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="notifications"
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-                animation: 'slide_from_bottom',
-              }}
-            />
-            <Stack.Screen
-              name="modal"
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-                title: 'Identity Verification',
-                animation: 'slide_from_bottom',
-              }}
-            />
-            <Stack.Screen
-              name="viewer"
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-                animation: 'fade',
-              }}
-            />
-          </Stack>
+          <AppStack />
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         </WebShell>
       ) : (
         <>
-          <Stack
-            initialRouteName="splash"
-            screenOptions={{ headerShown: false, animation: 'fade', animationDuration: 220 }}>
-            <Stack.Screen name="splash" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="notifications"
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-                animation: 'slide_from_bottom',
-              }}
-            />
-            <Stack.Screen
-              name="modal"
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-                title: 'Identity Verification',
-                animation: 'slide_from_bottom',
-              }}
-            />
-            <Stack.Screen
-              name="viewer"
-              options={{
-                presentation: 'modal',
-                headerShown: false,
-                animation: 'fade',
-              }}
-            />
-          </Stack>
+          <AppStack />
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         </>
       )}
     </ThemeProvider>
+  );
+}
+
+function AppStack() {
+  return (
+    <Stack
+      initialRouteName="splash"
+      screenOptions={{ headerShown: false, animation: 'fade', animationDuration: 220 }}>
+      <Stack.Screen name="splash" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="notifications"
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="modal"
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+          title: 'Identity Verification',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="viewer"
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+          animation: 'fade',
+        }}
+      />
+    </Stack>
   );
 }
 
@@ -161,7 +136,7 @@ const PHONE_FRAME_H = MOBILE_VIEWPORT.height + PHONE_BEZEL * 2;
 function WebShell({ children, colorScheme }: { children: ReactNode; colorScheme: 'light' | 'dark' }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth } = useViewportDimensions();
   const theme = Colors[colorScheme];
   const isCompact = windowWidth < 980;
   const showBackButton = pathname !== '/splash' && pathname !== '/';

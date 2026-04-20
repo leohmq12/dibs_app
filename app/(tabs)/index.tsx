@@ -12,6 +12,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
+import { ResponsiveWrapper } from '@/components/responsive-wrapper';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
@@ -48,6 +50,7 @@ export default function HomeScreen() {
   const theme = Colors[colorScheme];
   const router = useRouter();
   const { user } = useAuth();
+  const { isMobile, isTablet } = useViewportDimensions();
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [stats, setStats] = useState({ images: 0, videos: 0 });
@@ -88,19 +91,19 @@ export default function HomeScreen() {
     const channel = supabase
       .channel('home_realtime_logs')
       .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'logs' },
-        (payload) => {
-          const d = payload.new as any;
-          const newItem: ActivityItem = {
-            id: d.id,
-            title: d.name || 'System Log',
-            subtitle: formatLogDetails(d.details),
-            time: formatRelativeTime(d.created_at),
-            type: d.type || 'success',
-          };
-          setActivities((prev) => [newItem, ...prev].slice(0, 3));
-        }
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'logs' },
+          (payload) => {
+            const d = payload.new as any;
+            const newItem: ActivityItem = {
+              id: d.id,
+              title: d.name || 'System Log',
+              subtitle: formatLogDetails(d.details),
+              time: formatRelativeTime(d.created_at),
+              type: d.type || 'success',
+            };
+            setActivities((prev) => [newItem, ...prev].slice(0, 3));
+          }
       )
       .subscribe();
 
@@ -114,133 +117,141 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Top bar: sidebar (g59oc) | centered logo (BM6JB) | notification (pKd4o) */}
-          <View style={styles.topBar}>
-            <Pressable
-              onPress={() => setSideMenuOpen(true)}
-              style={({ pressed }) => [styles.topBarButton, pressed && styles.topBarButtonPressed]}
-              hitSlop={12}
-              accessibilityLabel="Open menu"
-            >
-              <MaterialIcons name="menu" size={28} color={theme.text} />
-            </Pressable>
-            <View style={styles.logoRow}>
-              <DibsLogo width={110} height={42} />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ResponsiveWrapper maxWidth={isTablet ? 900 : 600} style={styles.content}>
+            {/* Top bar */}
+            <View style={styles.topBar}>
+              <Pressable
+                onPress={() => setSideMenuOpen(true)}
+                style={({ pressed }) => [styles.topBarButton, pressed && styles.topBarButtonPressed]}
+                hitSlop={12}
+                accessibilityLabel="Open menu"
+              >
+                <MaterialIcons name="menu" size={28} color={theme.text} />
+              </Pressable>
+              <View style={styles.logoRow}>
+                <DibsLogo width={110} height={42} />
+              </View>
+              <Pressable
+                onPress={() => router.push('/notifications')}
+                style={({ pressed }) => [styles.topBarButton, styles.topBarButtonRight, pressed && styles.topBarButtonPressed]}
+                hitSlop={12}
+                accessibilityLabel="Notifications"
+              >
+                <MaterialIcons name="notifications" size={26} color={theme.text} />
+                <View style={[styles.notificationBadge, { backgroundColor: theme.primary }]} />
+              </Pressable>
             </View>
-            <Pressable
-              onPress={() => router.push('/notifications')}
-              style={({ pressed }) => [styles.topBarButton, styles.topBarButtonRight, pressed && styles.topBarButtonPressed]}
-              hitSlop={12}
-              accessibilityLabel="Notifications"
-            >
-              <MaterialIcons name="notifications" size={26} color={theme.text} />
-              <View style={[styles.notificationBadge, { backgroundColor: theme.primary }]} />
-            </Pressable>
-          </View>
-          <View style={styles.header}>
-            <View style={styles.avatarWrap}>
-              <Image
-                source={require('../../assets/images/face.png')}
-                style={styles.avatar}
-              />
+
+            <View style={styles.header}>
+              <View style={styles.avatarWrap}>
+                <Image
+                  source={require('../../assets/images/face.png')}
+                  style={styles.avatar}
+                />
+              </View>
+              <View style={styles.userInfo}>
+                <ThemedText style={[styles.welcomeLabel, { color: theme.mutedText }]}>Welcome back,</ThemedText>
+                <ThemedText style={[styles.userName, { color: theme.text, fontSize: isMobile ? 20 : 28 }]}>{userName}</ThemedText>
+              </View>
+              <View
+                style={[
+                  styles.protectedPill,
+                  {
+                    backgroundColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.1)' : 'rgba(34, 198, 217, 0.08)',
+                    borderColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.2)' : 'rgba(34, 198, 217, 0.2)',
+                  },
+                ]}>
+                <MaterialIcons name="verified-user" size={isMobile ? 12 : 16} color={theme.accent} />
+                <ThemedText style={[styles.protectedText, { color: theme.accent, fontSize: isMobile ? 11 : 13 }]}>Protected</ThemedText>
+              </View>
             </View>
-            <View style={styles.userInfo}>
-              <ThemedText style={[styles.welcomeLabel, { color: theme.mutedText }]}>Welcome back,</ThemedText>
-              <ThemedText style={[styles.userName, { color: theme.text }]}>{userName}</ThemedText>
+
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+            <View style={[styles.statsRow, !isMobile && { gap: 24 }]}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.statCard,
+                  {
+                    backgroundColor: theme.cardTint,
+                    borderColor: theme.cardTintBorder,
+                    opacity: pressed ? 0.9 : 1,
+                  },
+                ]}>
+                <LinearGradient
+                  colors={theme.primary === '#E21D20' ? ['#FF3B3E', '#E21D20'] : theme.dangerGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.statIcon}>
+                  <MaterialIcons name="image" size={isMobile ? 18 : 24} color="#FFF" />
+                </LinearGradient>
+                <ThemedText style={[styles.statValue, { color: theme.text, fontSize: isMobile ? 24 : 32 }]}>{stats.images}</ThemedText>
+                <ThemedText style={[styles.statLabel, { color: theme.mutedText }]}>protected images</ThemedText>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.statCard,
+                  {
+                    backgroundColor: theme.cardTint,
+                    borderColor: theme.cardTintBorder,
+                    opacity: pressed ? 0.9 : 1,
+                  },
+                ]}>
+                <LinearGradient
+                  colors={theme.blueGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.statIcon}>
+                  <MaterialIcons name="videocam" size={isMobile ? 18 : 24} color="#FFF" />
+                </LinearGradient>
+                <ThemedText style={[styles.statValue, { color: theme.text, fontSize: isMobile ? 24 : 32 }]}>{stats.videos}</ThemedText>
+                <ThemedText style={[styles.statLabel, { color: theme.mutedText }]}>protected videos</ThemedText>
+              </Pressable>
             </View>
-            <View
-              style={[
-                styles.protectedPill,
-                {
-                  backgroundColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.1)' : 'rgba(34, 198, 217, 0.08)',
-                  borderColor: colorScheme === 'dark' ? 'rgba(34, 198, 217, 0.2)' : 'rgba(34, 198, 217, 0.2)',
-                },
-              ]}>
-              <MaterialIcons name="verified-user" size={12} color={theme.accent} />
-              <ThemedText style={[styles.protectedText, { color: theme.accent }]}>Protected</ThemedText>
+
+            <View style={styles.sectionHeader}>
+              <ThemedText style={[styles.sectionTitle, { color: theme.text, fontSize: isMobile ? 20 : 26 }]}>Recent Activity</ThemedText>
+              <Pressable onPress={() => router.push('/(tabs)/logs')} hitSlop={8}>
+                <ThemedText style={[styles.viewLogText, { color: theme.accent, fontSize: isMobile ? 12 : 14 }]}>View Log</ThemedText>
+              </Pressable>
             </View>
-          </View>
 
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-          <View style={styles.statsRow}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.statCard,
-                {
-                  backgroundColor: theme.cardTint,
-                  borderColor: theme.cardTintBorder,
-                  opacity: pressed ? 0.9 : 1,
-                },
-              ]}>
-              <LinearGradient
-                colors={theme.primary === '#E21D20' ? ['#FF3B3E', '#E21D20'] : theme.dangerGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.statIcon}>
-                <MaterialIcons name="image" size={18} color="#FFF" />
-              </LinearGradient>
-              <ThemedText style={[styles.statValue, { color: theme.text }]}>{stats.images}</ThemedText>
-              <ThemedText style={[styles.statLabel, { color: theme.mutedText }]}>protected images</ThemedText>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.statCard,
-                {
-                  backgroundColor: theme.cardTint,
-                  borderColor: theme.cardTintBorder,
-                  opacity: pressed ? 0.9 : 1,
-                },
-              ]}>
-              <LinearGradient
-                colors={theme.blueGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.statIcon}>
-                <MaterialIcons name="videocam" size={18} color="#FFF" />
-              </LinearGradient>
-              <ThemedText style={[styles.statValue, { color: theme.text }]}>{stats.videos}</ThemedText>
-              <ThemedText style={[styles.statLabel, { color: theme.mutedText }]}>protected videos</ThemedText>
-            </Pressable>
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <ThemedText style={[styles.sectionTitle, { color: theme.text }]}>Recent Activity</ThemedText>
-            <Pressable onPress={() => router.push('/(tabs)/logs')} hitSlop={8}>
-              <ThemedText style={[styles.viewLogText, { color: theme.accent }]}>View Log</ThemedText>
-            </Pressable>
-          </View>
-
-          <View style={[styles.activityList, { backgroundColor: theme.cardTint, borderWidth: 1, borderColor: theme.cardTintBorder }]}>
-            {activities.map((item, index) => (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.activityRow,
-                    index > 0 && { borderTopWidth: 1, borderTopColor: theme.cardTintBorder },
-                  ]}>
-                  <View style={[styles.activityIcon, { backgroundColor: item.type === 'success' ? 'rgba(57, 198, 149, 0.2)' : item.type === 'danger' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(96, 165, 250, 0.2)' }]}>
-                    {item.type === 'success' ? (
-                      <MaterialIcons name="verified-user" size={18} color={theme.success} />
-                    ) : item.type === 'danger' ? (
-                      <MaterialIcons name="block" size={18} color={theme.danger} />
-                    ) : (
-                      <MaterialIcons name="sync" size={18} color={theme.blueGradient[0]} />
-                    )}
-                  </View>
-                  <View style={styles.activityBody}>
-                    <ThemedText style={[styles.activityTitle, { color: theme.text }]}>{item.title}</ThemedText>
-                    <View style={styles.activityMeta}>
-                      <ThemedText style={[styles.activitySubtitle, { color: theme.mutedText }]}>{item.subtitle}</ThemedText>
-                      <View style={[styles.activityDot, { backgroundColor: theme.mutedText }]} />
-                      <ThemedText style={[styles.activityTime, { color: theme.mutedText }]}>{item.time}</ThemedText>
+            <View style={[styles.activityList, { backgroundColor: theme.cardTint, borderWidth: 1, borderColor: theme.cardTintBorder }]}>
+              {activities.map((item, index) => (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.activityRow,
+                      index > 0 && { borderTopWidth: 1, borderTopColor: theme.cardTintBorder },
+                    ]}>
+                    <View style={[styles.activityIcon, { backgroundColor: item.type === 'success' ? 'rgba(57, 198, 149, 0.2)' : item.type === 'danger' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(96, 165, 250, 0.2)' }]}>
+                      {item.type === 'success' ? (
+                        <MaterialIcons name="verified-user" size={18} color={theme.success} />
+                      ) : item.type === 'danger' ? (
+                        <MaterialIcons name="block" size={18} color={theme.danger} />
+                      ) : (
+                        <MaterialIcons name="sync" size={18} color={theme.blueGradient[0]} />
+                      )}
                     </View>
+                    <View style={styles.activityBody}>
+                      <ThemedText style={[styles.activityTitle, { color: theme.text }]}>{item.title}</ThemedText>
+                      <View style={styles.activityMeta}>
+                        <ThemedText style={[styles.activitySubtitle, { color: theme.mutedText }]}>{item.subtitle}</ThemedText>
+                        <View style={[styles.activityDot, { backgroundColor: theme.mutedText }]} />
+                        <ThemedText style={[styles.activityTime, { color: theme.mutedText }]}>{item.time}</ThemedText>
+                      </View>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.5 }} />
                   </View>
-                  <MaterialIcons name="chevron-right" size={20} color={theme.mutedText} style={{ opacity: 0.5 }} />
+              ))}
+              {activities.length === 0 && (
+                <View style={styles.emptyState}>
+                  <ThemedText style={{ color: theme.mutedText, textAlign: 'center' }}>No recent activity to show</ThemedText>
                 </View>
-            ))}
-          </View>
+              )}
+            </View>
+          </ResponsiveWrapper>
         </ScrollView>
       </SafeAreaView>
       <SideMenu visible={sideMenuOpen} onClose={() => setSideMenuOpen(false)} />
@@ -251,6 +262,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   safeArea: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
   content: { paddingHorizontal: 16, paddingBottom: 120, paddingTop: 8 },
   topBar: {
     flexDirection: 'row',
@@ -297,7 +309,7 @@ const styles = StyleSheet.create({
   avatar: { width: '100%', height: '100%', borderRadius: 28 },
   userInfo: { flex: 1, minWidth: 0 },
   welcomeLabel: { fontSize: 13, lineHeight: 20 },
-  userName: { fontSize: 20, fontFamily: FontFamilies.medium, letterSpacing: -1, lineHeight: 30 },
+  userName: { fontFamily: FontFamilies.medium, letterSpacing: -1, lineHeight: 30 },
   protectedPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -307,7 +319,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     borderWidth: 1,
   },
-  protectedText: { fontSize: 11, fontFamily: FontFamilies.medium },
+  protectedText: { fontFamily: FontFamilies.medium },
   divider: { height: 1, marginVertical: 10, opacity: 0.05 },
   statsRow: { flexDirection: 'row', gap: 19, marginBottom: 16 },
   statCard: {
@@ -325,7 +337,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  statValue: { fontSize: 24, fontFamily: FontFamilies.semiBold, lineHeight: 30 },
+  statValue: { fontFamily: FontFamilies.semiBold, lineHeight: 30 },
   statLabel: { fontSize: 10, letterSpacing: 1, lineHeight: 30, textTransform: 'lowercase' },
   sectionHeader: {
     flexDirection: 'row',
@@ -333,8 +345,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 20, fontFamily: FontFamilies.semiBold, lineHeight: 30 },
-  viewLogText: { fontSize: 12, fontFamily: FontFamilies.medium },
+  sectionTitle: { fontFamily: FontFamilies.semiBold, lineHeight: 30 },
+  viewLogText: { fontFamily: FontFamilies.medium },
   activityList: { borderRadius: 18, overflow: 'hidden' },
   activityRow: {
     flexDirection: 'row',
@@ -356,4 +368,5 @@ const styles = StyleSheet.create({
   activitySubtitle: { fontSize: 12 },
   activityDot: { width: 3, height: 3, borderRadius: 1.5 },
   activityTime: { fontSize: 12 },
+  emptyState: { padding: 32 },
 });
