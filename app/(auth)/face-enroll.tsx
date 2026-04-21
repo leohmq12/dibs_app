@@ -95,11 +95,19 @@ function NativeEnrollScreen({
   const device = useCameraDevice('front');
   const cameraRef = useRef<Camera>(null);
 
-  const faceModel = useTensorflowModel(
-    require('@/assets/models/mobilefacenet.tflite'),
-    []
-  );
+  const modelSource = require('@/assets/models/mobilefacenet.tflite');
+  console.log('Model source:', modelSource);
+  const faceModel = useTensorflowModel(modelSource, []);
   const model = faceModel.state === 'loaded' ? faceModel.model : undefined;
+
+  // Debug: show model error or loading state
+  const debugInfo = faceModel.state === 'error' 
+    ? `Model error: ${faceModel.error?.message || faceModel.error}`
+    : faceModel.state === 'loading' 
+      ? 'Model still loading...'
+      : faceModel.state === 'loaded' 
+        ? 'Model loaded!' 
+        : `Unknown state: ${faceModel.state}`;
 
   const { detectFaces } = useFaceDetector({
     performanceMode: 'fast',
@@ -254,6 +262,13 @@ function NativeEnrollScreen({
   };
 
   const modelState = faceModel.state;
+  const modelError = faceModel.error;
+  console.log('Face model state:', modelState, modelError);
+
+  // Show debug info on screen
+  const debugText = modelState !== 'loaded' 
+    ? (modelError ? `${modelError}` : `State: ${modelState}`) 
+    : '';
 
   const instructionTitle =
     phase === 'capturing'
@@ -267,7 +282,7 @@ function NativeEnrollScreen({
   const instructionSub =
     phase === 'error'
       ? errorMsg ?? 'Something went wrong.'
-      : 'Ensure your face is centered, well-lit and\nunobstructed by glasses or masks.';
+      : debugText || 'Ensure your face is centered, well-lit and\nunobstructed by glasses or masks.';
 
   const canEnroll =
     hasPermission &&
