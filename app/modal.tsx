@@ -24,6 +24,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { useTensorflowModel } from 'react-native-fast-tflite';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -33,15 +34,14 @@ import {
   useFrameProcessor,
 } from 'react-native-vision-camera';
 import { useFaceDetector, type Face } from 'react-native-vision-camera-face-detector';
-import { useTensorflowModel } from 'react-native-fast-tflite';
 import { Worklets } from 'react-native-worklets-core';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
+import { useDemoSession } from '@/hooks/demo-session';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useDemoSession } from '@/hooks/demo-session';
 import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import {
   cosineSimilarity,
@@ -158,7 +158,7 @@ function NativeVerificationModal({
       .then((e) => {
         if (!e) {
           setStatus('failed');
-          setErrorMsg('No face enrollment found. Please enroll first.');
+          setErrorMsg('No face enrollment found. Please enroll your face first.');
         } else {
           setEnrollment(e);
           setStatus('scanning');
