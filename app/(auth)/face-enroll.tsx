@@ -17,13 +17,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Camera,
+  runAtTargetFps,
   useCameraDevice,
   useCameraPermission,
   useFrameProcessor,
   type CameraRuntimeError,
 } from 'react-native-vision-camera';
 import { useFaceDetector, type Face } from 'react-native-vision-camera-face-detector';
-import { useTensorflowModel } from 'react-native-fast-tflite';
 import { Worklets } from 'react-native-worklets-core';
 
 import { ThemedText } from '@/components/themed-text';
@@ -31,6 +31,7 @@ import { ResponsiveWrapper } from '@/components/responsive-wrapper';
 import { Colors, FontFamilies } from '@/constants/theme';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFaceModel } from '@/hooks/use-face-model';
 import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import {
   averageEmbeddings,
@@ -95,19 +96,7 @@ function NativeEnrollScreen({
   const device = useCameraDevice('front');
   const cameraRef = useRef<Camera>(null);
 
-  const modelSource = require('@/assets/models/mobilefacenet.tflite');
-  console.log('Model source:', modelSource);
-  const faceModel = useTensorflowModel(modelSource, []);
-  const model = faceModel.state === 'loaded' ? faceModel.model : undefined;
-
-  // Debug: show model error or loading state
-  const debugInfo = faceModel.state === 'error' 
-    ? `Model error: ${faceModel.error?.message || faceModel.error}`
-    : faceModel.state === 'loading' 
-      ? 'Model still loading...'
-      : faceModel.state === 'loaded' 
-        ? 'Model loaded!' 
-        : `Unknown state: ${faceModel.state}`;
+  const { model, state: modelState, error: modelError } = useFaceModel();
 
   const { detectFaces } = useFaceDetector({
     performanceMode: 'fast',
@@ -138,20 +127,22 @@ function NativeEnrollScreen({
     }
   }, [hasPermission, requestPermission]);
 
+  const faceOkRef = useRef(false);
   const onFaces = Worklets.createRunOnJS(
     (faces: Face[], frameWidth: number, frameHeight: number) => {
       if (faces.length === 0) {
-        setFaceOk(false);
+        if (faceOkRef.current) {
+          faceOkRef.current = false;
+          setFaceOk(false);
+          setLighting(false);
+        }
         return;
       }
-      // Pick the largest face (likely the user)
       const face = faces.reduce((a, b) =>
         a.bounds.width * a.bounds.height > b.bounds.width * b.bounds.height ? a : b
       );
       const minSize = Math.min(frameWidth, frameHeight) * 0.25;
       const largeEnough = face.bounds.width >= minSize;
-      setFaceOk(largeEnough);
-      setLighting(largeEnough); // rough proxy; a real impl would sample luma
       lastFaceRef.current = {
         bounds: {
           x: face.bounds.x,
@@ -162,14 +153,22 @@ function NativeEnrollScreen({
         frameWidth,
         frameHeight,
       };
+      if (largeEnough !== faceOkRef.current) {
+        faceOkRef.current = largeEnough;
+        setFaceOk(largeEnough);
+        setLighting(largeEnough);
+      }
     }
   );
 
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      const faces = detectFaces(frame);
-      onFaces(faces, frame.width, frame.height);
+      runAtTargetFps(5, () => {
+        'worklet';
+        const faces = detectFaces(frame);
+        onFaces(faces, frame.width, frame.height);
+      });
     },
     [detectFaces]
   );
@@ -261,15 +260,6 @@ function NativeEnrollScreen({
     setPhase('error');
   };
 
-  const modelState = faceModel.state;
-  const modelError = faceModel.error;
-  console.log('Face model state:', modelState, modelError);
-
-  // Show debug info on screen
-  const debugText = modelState !== 'loaded' 
-    ? (modelError ? `${modelError}` : `State: ${modelState}`) 
-    : '';
-
   const instructionTitle =
     phase === 'capturing'
       ? `Hold still — ${captureCount}/${CAPTURES_REQUIRED}`
@@ -282,7 +272,15 @@ function NativeEnrollScreen({
   const instructionSub =
     phase === 'error'
       ? errorMsg ?? 'Something went wrong.'
-      : debugText || 'Ensure your face is centered, well-lit and\nunobstructed by glasses or masks.';
+      : modelState !== 'loaded'
+        ? modelState === 'error'
+          ? `Model failed to load${
+              modelError && typeof modelError === 'object' && 'message' in modelError
+                ? `: ${(modelError as { message?: string }).message}`
+                : ''
+            }`
+          : 'Loading face model…'
+        : 'Ensure your face is centered, well-lit and\nunobstructed by glasses or masks.';
 
   const canEnroll =
     hasPermission &&

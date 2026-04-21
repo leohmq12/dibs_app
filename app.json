@@ -16,7 +16,6 @@
       "bundleIdentifier": "com.zubbihawk.dibs-expo"
     },
     "android": {
-      "minSdkVersion": 26,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/dibs_logo.png",
@@ -78,6 +77,16 @@
           "cameraPermissionText": "Allow DIBS to access the camera to enroll and verify your face.",
           "enableMicrophonePermission": false,
           "enableCodeScanner": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35
+          }
         }
       ]
     ],

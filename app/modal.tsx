@@ -24,11 +24,11 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { useTensorflowModel } from 'react-native-fast-tflite';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Camera,
+  runAtTargetFps,
   useCameraDevice,
   useCameraPermission,
   useFrameProcessor,
@@ -42,6 +42,7 @@ import { Colors, FontFamilies } from '@/constants/theme';
 import { useDemoSession } from '@/hooks/demo-session';
 import { useAuth } from '@/hooks/use-auth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFaceModel } from '@/hooks/use-face-model';
 import { useViewportDimensions } from '@/hooks/use-viewport-dimensions';
 import {
   cosineSimilarity,
@@ -119,11 +120,7 @@ function NativeVerificationModal({
   const device = useCameraDevice('front');
   const cameraRef = useRef<Camera>(null);
 
-  const faceModel = useTensorflowModel(
-    require('@/assets/models/mobilefacenet.tflite'),
-    []
-  );
-  const model = faceModel.state === 'loaded' ? faceModel.model : undefined;
+  const { model } = useFaceModel();
 
   const { detectFaces } = useFaceDetector({
     performanceMode: 'fast',
@@ -238,10 +235,18 @@ function NativeVerificationModal({
     }
   }, [model, enrollment, user, verifyVault, router]);
 
+  const statusRef = useRef<AuthStatus>('preparing');
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
   const onFaces = Worklets.createRunOnJS(
     (faces: Face[], frameWidth: number, frameHeight: number) => {
       if (faces.length === 0) {
-        setLiveness((s) => (s === 'passed' ? s : 'look-straight'));
+        if (livenessRef.current !== 'passed' && livenessRef.current !== 'look-straight') {
+          livenessRef.current = 'look-straight';
+          setLiveness('look-straight');
+        }
         return;
       }
       const face = faces.reduce((a, b) =>
@@ -257,7 +262,7 @@ function NativeVerificationModal({
         frameWidth,
         frameHeight,
       };
-      if (status === 'scanning') {
+      if (statusRef.current === 'scanning') {
         const next = nextLivenessState(livenessRef.current, {
           leftEyeOpenProbability: face.leftEyeOpenProbability,
           rightEyeOpenProbability: face.rightEyeOpenProbability,
@@ -276,8 +281,11 @@ function NativeVerificationModal({
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      const faces = detectFaces(frame);
-      onFaces(faces, frame.width, frame.height);
+      runAtTargetFps(5, () => {
+        'worklet';
+        const faces = detectFaces(frame);
+        onFaces(faces, frame.width, frame.height);
+      });
     },
     [detectFaces]
   );

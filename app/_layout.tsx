@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, FontFamilies } from '@/constants/theme';
@@ -14,6 +15,7 @@ import { MOBILE_VIEWPORT, WebViewportContext, useViewportDimensions } from '@/ho
 import { ThemeModeProvider, useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/hooks/use-auth';
 import { DemoSessionProvider } from '@/hooks/demo-session';
+import { FaceModelProvider } from '@/hooks/use-face-model';
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -61,13 +63,17 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeModeProvider>
-      <DemoSessionProvider>
-        <AuthProvider>
-          <RootNavigator />
-        </AuthProvider>
-      </DemoSessionProvider>
-    </ThemeModeProvider>
+    <ErrorBoundary>
+      <ThemeModeProvider>
+        <DemoSessionProvider>
+          <AuthProvider>
+            <FaceModelProvider>
+              <RootNavigator />
+            </FaceModelProvider>
+          </AuthProvider>
+        </DemoSessionProvider>
+      </ThemeModeProvider>
+    </ErrorBoundary>
   );
 }
 
